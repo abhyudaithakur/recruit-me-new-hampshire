@@ -1,0 +1,32 @@
+{
+  "labels": [
+    {
+      "name": "use-case",
+      "color": "1f883d"
+    },
+    {
+      "name": "frontend",
+      "color": "0e8a16"
+    },
+    {
+      "name": "backend",
+      "color": "5319e7"
+    },
+    {
+      "name": "json-spec",
+      "color": "fbca04"
+    },
+    {
+      "name": "storyboard",
+      "color": "c5def5"
+    },
+    {
+      "name": "blocking",
+      "color": "d93f0b"
+    },
+    {
+      "name": "good-first",
+      "color": "7057ff"
+    }
+  ]
+}

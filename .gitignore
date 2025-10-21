@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+dist/
+.env
+.env.*
+coverage/
+*.log
+package-lock.json
+pnpm-lock.yaml
+.vscode/
+.idea/
+.aws-sam/
+.sst/
