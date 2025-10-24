@@ -5,7 +5,7 @@ export async function POST(request:Request){
     let response = await fetch('mylambdafunctionurl',{
         method: request.method,
         body:request.body,
-        duplex:true //for soem reason requires a duplex member which isn't supposed to exist
+        duplex:"half" //for some reason requires a duplex member which isn't supposed to exist
     })
     response = await response.json()
     return NextResponse.json(response)
