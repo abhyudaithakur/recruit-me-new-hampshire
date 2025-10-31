@@ -1,6 +1,13 @@
+import mysql from 'mysql'
 export const handler = async (event) => {
-
+  var pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME
+});
   const registerUser = async (username, password) => {
+    
     // <MOCK> *************************************
     if(username == password){return {credential: username, userType: "applicant"}}
     return {}
