@@ -5,16 +5,15 @@ import axios from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 
 const instance = axios.create({
-    baseURL:'https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1'
+    baseURL:process.env.NEXT_PUBLIC_API_STAGE
   })
 
 const Login: React.FC = () => {
-//   const router = useRouter();
+  const router = useRouter()
   const [load, setLoad] = React.useState({visibility: 'hidden'} as React.CSSProperties)
   const [err, setErr] = React.useState('');
 
   const { setCredential, setUserType } = useAuth()
-  const router = useRouter()
 
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

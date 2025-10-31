@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 
 const instance = axios.create({
-    baseURL:'https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1'
+    baseURL:process.env.NEXT_PUBLIC_API_STAGE
   })
 
 const SignUp: React.FC = () => {
