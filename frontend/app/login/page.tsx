@@ -1,11 +1,11 @@
 'use client'
 import React, { FormEvent } from 'react';
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 
 const instance = axios.create({
-    baseURL:''
+    baseURL:'https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1'
   })
 
 const Login: React.FC = () => {
@@ -14,6 +14,7 @@ const Login: React.FC = () => {
   const [err, setErr] = React.useState('');
 
   const { setCredential, setUserType } = useAuth()
+  const router = useRouter()
 
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,10 +25,10 @@ const Login: React.FC = () => {
       const status = response.data.statusCode;
 
         // <MOCK> ***********************************************
-        document.cookie = 'credential=' + '12345'
-        setCredential('username')
-        document.cookie='userType=' + 'applicant'
-      setUserType(response.data.userType)
+        //   document.cookie = 'credential=' + '12345'
+        //   setCredential('username')
+        //   document.cookie='userType=' + 'applicant'
+        //   setUserType(response.data.userType)
         // </MOCK> ***********************************************
 
       if (status == 200) {
@@ -35,6 +36,7 @@ const Login: React.FC = () => {
         setCredential(response.data.credential)
         document.cookie='userType=' + response.data.userType
         setUserType(response.data.userType)
+        router.push('/')
       }else{
         setErr(response.data.error);
         setLoad({visibility: 'hidden'})
