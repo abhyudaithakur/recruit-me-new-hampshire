@@ -30,7 +30,7 @@ const AuthProvider = ({ children }: Readonly<{children: React.ReactNode}>) => {
         if(cred){
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setCredential(cred)
-            setUserType(ut ? ut : '')
+            setUserType(ut ? ut : 'applicant')
         }else{
             setCredential('')
             setUserType('')

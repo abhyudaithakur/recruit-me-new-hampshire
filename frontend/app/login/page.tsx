@@ -1,15 +1,15 @@
 'use client'
 import React, { FormEvent } from 'react';
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 
 const instance = axios.create({
-    baseURL:''
+    baseURL:process.env.NEXT_PUBLIC_API_STAGE
   })
 
 const Login: React.FC = () => {
-//   const router = useRouter();
+  const router = useRouter()
   const [load, setLoad] = React.useState({visibility: 'hidden'} as React.CSSProperties)
   const [err, setErr] = React.useState('');
 
@@ -24,10 +24,10 @@ const Login: React.FC = () => {
       const status = response.data.statusCode;
 
         // <MOCK> ***********************************************
-        document.cookie = 'credential=' + '12345'
-        setCredential('username')
-        document.cookie='userType=' + 'applicant'
-      setUserType(response.data.userType)
+        //   document.cookie = 'credential=' + '12345'
+        //   setCredential('username')
+        //   document.cookie='userType=' + 'applicant'
+        //   setUserType(response.data.userType)
         // </MOCK> ***********************************************
 
       if (status == 200) {
@@ -35,6 +35,7 @@ const Login: React.FC = () => {
         setCredential(response.data.credential)
         document.cookie='userType=' + response.data.userType
         setUserType(response.data.userType)
+        router.push('/')
       }else{
         setErr(response.data.error);
         setLoad({visibility: 'hidden'})

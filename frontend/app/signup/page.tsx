@@ -1,15 +1,15 @@
 'use client'
 import React, { FormEvent } from 'react';
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/components/AuthProvider';
 
 const instance = axios.create({
-    baseURL:''
+    baseURL:process.env.NEXT_PUBLIC_API_STAGE
   })
 
-const Login: React.FC = () => {
-//   const router = useRouter();
+const SignUp: React.FC = () => {
+  const router = useRouter();
   const [load, setLoad] = React.useState({visibility: 'hidden'} as React.CSSProperties)
   const [err, setErr] = React.useState('');
 
@@ -31,10 +31,10 @@ const Login: React.FC = () => {
       const status = response.data.statusCode;
 
       // <MOCK> ***********************************************
-      document.cookie = 'credential=' + '12345'
-      setCredential('username')
-      document.cookie='userType=' + 'applicant'
-      setUserType(response.data.userType)
+      // document.cookie = 'credential=' + '12345'
+      // setCredential('username')
+      // document.cookie='userType=' + 'applicant'
+      // setUserType(response.data.userType)
       // </MOCK> ***********************************************
 
       if (status == 200) {
@@ -42,18 +42,29 @@ const Login: React.FC = () => {
         setCredential(response.data.credential)
         document.cookie='userType=' + response.data.userType
         setUserType(response.data.userType)
-        
+        router.push('/')
       }else{
         setErr(response.data.error);
         setLoad({visibility: 'hidden'})
       }
     })
     .catch(function (error: React.SetStateAction<string>) {
-        setErr('failed to log in: ' + error);
+        setErr('failed to register: ' + error);
         setLoad({visibility: 'hidden'})
     })
   };
 
+  const checkPass = () => {
+    const password = document.getElementById("password") as HTMLInputElement;
+    const verify = document.getElementById("verify-password") as HTMLInputElement;
+
+    if(password.value != verify.value){
+      setErr("Passwords do not match!")
+    }else{
+      setErr("")
+    }
+
+  }
   
   return(
     <div className='content'>
@@ -61,7 +72,7 @@ const Login: React.FC = () => {
         <form onSubmit={handleSignup}>
           <input id='username' placeholder='Username'/>
           <input id='password' placeholder='Password' type='password'/>
-          <input id='verify-password' placeholder='Verify password' type='password'/>
+          <input id='verify-password' placeholder='Verify password' type='password'onChange={checkPass}/>
           <button type="submit">Sign Up</button>
           {/*eslint-disable-next-line @next/next/no-img-element*/}
           <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
@@ -73,4 +84,4 @@ const Login: React.FC = () => {
 }
 
 
-export default Login;
+export default SignUp;
