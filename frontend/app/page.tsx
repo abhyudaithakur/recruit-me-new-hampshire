@@ -7,7 +7,7 @@ import { SkillList } from "@/components/SkillList";
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: /* "skjdfhskdj" + */ process.env.NEXT_PUBLIC_API_STAGE,
+  baseURL: process.env.NEXT_PUBLIC_API_STAGE,
 });
 
 export default function Home() {
@@ -24,9 +24,13 @@ export default function Home() {
   useEffect(() => {
     if (!credentials.loading && !credentials.credential) {
       router.push("/login");
-    } else if (!credentials.loading && credentials.credential && credentials.username) {
-      setUsername(credentials.username)
-      getSkillsFromDB(credentials.username)
+    } else if (
+      !credentials.loading &&
+      credentials.credential &&
+      credentials.username
+    ) {
+      setUsername(credentials.username);
+      getSkillsFromDB(credentials.username);
     }
   }, [credentials]);
 
@@ -43,22 +47,20 @@ export default function Home() {
       .then(function (response) {
         const status = response.data.statusCode;
         if (status == 200) {
-          setSkills(response.data.skills)
+          setSkills(response.data.skills);
         } else {
           setErr(response.data.error);
-          // setLoad({ visibility: "hidden" });
         }
       })
       .catch(function (error: React.SetStateAction<string>) {
-        setErr("failed to register: " + error);
-        // setLoad({ visibility: "hidden" });
-      }).finally(()=>{
+        setErr("failed to set skills: " + error);
+      })
+      .finally(() => {
         setLoad({ visibility: "hidden" });
-
       });
   }
 
-  function getSkillsFromDB(name:string) {
+  function getSkillsFromDB(name: string) {
     let body = {
       name: name,
       token: credentials.credential,
@@ -70,18 +72,18 @@ export default function Home() {
       .then(function (response) {
         const status = response.data.statusCode;
         if (status == 200) {
-          setSkills(response.data.skills)
+          setSkills(response.data.skills);
         } else {
           setErr(response.data.error);
           // setLoad({ visibility: "hidden" });
         }
       })
       .catch(function (error: React.SetStateAction<string>) {
-        setErr("failed to register: " + error);
+        setErr("failed to get skills: " + error);
         // setLoad({ visibility: "hidden" });
-      }).finally(()=>{
+      })
+      .finally(() => {
         setLoad({ visibility: "hidden" });
-
       });
   }
 
