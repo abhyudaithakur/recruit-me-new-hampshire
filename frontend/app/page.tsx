@@ -13,7 +13,7 @@ const instance = axios.create({
 export default function Home() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("steve");
+  const [username, setUsername] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [load, setLoad] = useState({
     visibility: "hidden",
@@ -24,8 +24,9 @@ export default function Home() {
   useEffect(() => {
     if (!credentials.loading && !credentials.credential) {
       router.push("/login");
-    } else if (!credentials.loading && credentials.credential) {
-      getSkillsFromDB()
+    } else if (!credentials.loading && credentials.credential && credentials.username) {
+      setUsername(credentials.username)
+      getSkillsFromDB(credentials.username)
     }
   }, [credentials]);
 
@@ -57,9 +58,9 @@ export default function Home() {
       });
   }
 
-  function getSkillsFromDB() {
+  function getSkillsFromDB(name:string) {
     let body = {
-      name: username,
+      name: name,
       token: credentials.credential,
       userType: credentials.userType,
     };

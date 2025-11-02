@@ -13,7 +13,7 @@ const SignUp: React.FC = () => {
   const [load, setLoad] = React.useState({visibility: 'hidden'} as React.CSSProperties)
   const [err, setErr] = React.useState('');
 
-  const { setCredential, setUserType } = useAuth()
+  const { setCredential, setUserType,setUserName } = useAuth()
 
   const handleSignup = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,6 +42,8 @@ const SignUp: React.FC = () => {
         setCredential(response.data.credential)
         document.cookie='userType=' + response.data.userType
         setUserType(response.data.userType)
+        document.cookie='username=' + username.value
+        setUserName(username.value)
         router.push('/')
       }else{
         setErr(response.data.error);
