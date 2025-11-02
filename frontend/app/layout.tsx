@@ -18,6 +18,8 @@ export default function RootLayout({
           <nav>
             <Link href={'/'}>Home</Link>
             <span> | </span>
+            <Link href={'/search'}> Search</Link>
+            <span> | </span>
             <LogInOut/>
           </nav>
           {children}
