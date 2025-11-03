@@ -3,7 +3,7 @@
 import { useAuth } from "@/components/AuthProvider";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { MouseEventHandler, useEffect, useState } from "react";
 import { SkillList } from "@/components/SkillList";
 import axios from "axios";
 
@@ -12,7 +12,15 @@ const instance = axios.create({
 });
 
 // Custom Confirmation Modal Component
-function ConfirmModal({ message, onConfirm, onCancel }:{message:string, onConfirm:CallableFunction, onCancel:CallableFunction}) {
+function ConfirmModal({
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  onConfirm: MouseEventHandler<HTMLButtonElement>;
+  onCancel: MouseEventHandler<HTMLButtonElement>;
+}) {
   return (
     <div
       style={{
@@ -66,8 +74,13 @@ export default function ApplicantDashboard() {
 
   const credentials = useAuth();
 
-  const [offers, setOffers] = useState([]);
-  const [modal, setModal] = useState({
+  const [offers, setOffers] = useState<any[]>([]);
+
+  const [modal, setModal] = useState<{
+    visible: boolean;
+    action: "accept" | "reject" | null;
+    offerId: number | null;
+  }>({
     visible: false,
     action: null,
     offerId: null,
@@ -175,7 +188,10 @@ export default function ApplicantDashboard() {
   }, []);
 
   // Handle Accept / Reject with modal
-  const handleAction = (offerId, action) => {
+  const handleAction = (
+    offerId: number,
+    action: "accept" | "reject" | null
+  ) => {
     setModal({ visible: true, action, offerId });
   };
 
