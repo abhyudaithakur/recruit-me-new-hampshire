@@ -74,7 +74,7 @@ export default function ApplicantDashboard() {
 
   const credentials = useAuth();
 
-  const [offers, setOffers] = useState<any[]>([]);
+  const [offers, setOffers] = useState<{offer_id:number,title:string;company:string,status:string}[]>([]);
 
   const [modal, setModal] = useState<{
     visible: boolean;
@@ -162,23 +162,17 @@ export default function ApplicantDashboard() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              pathParameters: {
-                applicantId: "1",
-              },
+              pathParameters: { applicantId: 1},
             }),
           }
         );
-        const data = await res.json();
-        console.log("Fetched offers:", data);
 
-        // Ensure data is an array
-        if (Array.isArray(data)) {
-          setOffers(data);
-        } else if (data.data && Array.isArray(data.data)) {
-          setOffers(data.data);
-        } else {
-          setOffers([]);
-        }
+        let data = await res.json();
+        {}[]
+        console.log(data);
+        if (typeof data === "string") data = JSON.parse(data);
+        if (Array.isArray(data)) setOffers(data);
+        else setOffers([]);
       } catch (err) {
         console.error("Error fetching offers:", err);
         setOffers([]);
@@ -187,7 +181,7 @@ export default function ApplicantDashboard() {
     fetchOffers();
   }, []);
 
-  // Handle Accept / Reject with modal
+  // Accept / Reject modal handlers
   const handleAction = (
     offerId: number,
     action: "accept" | "reject" | null
