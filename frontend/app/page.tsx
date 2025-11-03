@@ -21,7 +21,34 @@ export default function Home() {
   const [err, setErr] = useState("");
 
   const credentials = useAuth();
+
   useEffect(() => {
+    function getSkillsFromDB(name: string) {
+      const body = {
+        name: name,
+        token: credentials.credential,
+        userType: credentials.userType,
+      };
+      setLoad({ visibility: "visible" });
+      instance
+        .post("/getProfileSkills", body)
+        .then(function (response) {
+          const status = response.data.statusCode;
+          if (status == 200) {
+            setSkills(response.data.skills);
+          } else {
+            setErr(response.data.error);
+            // setLoad({ visibility: "hidden" });
+          }
+        })
+        .catch(function (error: React.SetStateAction<string>) {
+          setErr("failed to get skills: " + error);
+          // setLoad({ visibility: "hidden" });
+        })
+        .finally(() => {
+          setLoad({ visibility: "hidden" });
+        });
+    }
     if (!credentials.loading && !credentials.credential) {
       router.push("/login");
     } else if (
@@ -29,13 +56,14 @@ export default function Home() {
       credentials.credential &&
       credentials.username
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsername(credentials.username);
       getSkillsFromDB(credentials.username);
     }
-  }, [credentials]);
+  }, [credentials, router]);
 
   function sendSkillChanges() {
-    let body = {
+    const body = {
       name: username,
       token: credentials.credential,
       userType: credentials.userType,
@@ -54,33 +82,6 @@ export default function Home() {
       })
       .catch(function (error: React.SetStateAction<string>) {
         setErr("failed to set skills: " + error);
-      })
-      .finally(() => {
-        setLoad({ visibility: "hidden" });
-      });
-  }
-
-  function getSkillsFromDB(name: string) {
-    let body = {
-      name: name,
-      token: credentials.credential,
-      userType: credentials.userType,
-    };
-    setLoad({ visibility: "visible" });
-    instance
-      .post("/getProfileSkills", body)
-      .then(function (response) {
-        const status = response.data.statusCode;
-        if (status == 200) {
-          setSkills(response.data.skills);
-        } else {
-          setErr(response.data.error);
-          // setLoad({ visibility: "hidden" });
-        }
-      })
-      .catch(function (error: React.SetStateAction<string>) {
-        setErr("failed to get skills: " + error);
-        // setLoad({ visibility: "hidden" });
       })
       .finally(() => {
         setLoad({ visibility: "hidden" });

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 import axios from "axios";
 import { on } from "events";
@@ -72,9 +73,9 @@ export default function search() {
     ).value;
     const skillString = (document.getElementById("Skills") as HTMLInputElement)
       .value;
-    let companyName = comanyName.length > 0 ? comanyName : null;
+    const companyName = comanyName.length > 0 ? comanyName : null;
     setSearchName(companyName)
-    let skilllist = skillString.split(",").filter((x) => x.length > 0);
+    const skilllist = skillString.split(",").filter((x) => x.length > 0);
     setSearchSkills(skilllist)
 
     searchJobs({
@@ -103,7 +104,7 @@ export default function search() {
     pageSize: number;
     includeClosed: boolean;
   }) {
-    let body = {
+    const body = {
       companyName: search.compName,
       skills: search.skills,
       pageNumber: search.page,
