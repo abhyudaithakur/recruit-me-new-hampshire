@@ -10,12 +10,12 @@ const API =
 export default function Page() {
   const [jobId, setJobId] = useState("");
   const [applicantId, setApplicantId] = useState("");
-  const [resp, setResp] = useState<any>(null);
+  const [resp, setResp] = useState({});
   const [err, setErr] = useState<string | null>(null);
 
   async function post(path: "apply" | "withdraw") {
     setErr(null);
-    setResp(null);
+    setResp({});
     try {
       const res = await fetch(`${API}/jobs/${jobId}/${path}`, {
         method: "POST",
@@ -24,7 +24,7 @@ export default function Page() {
       });
       const data = await res.json().catch(() => ({}));
       setResp({ status: res.status, data });
-    } catch (e: any) {
+    } catch (e) {
       setErr(String(e));
     }
   }
