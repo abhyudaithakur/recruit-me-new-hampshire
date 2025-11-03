@@ -167,12 +167,9 @@ export default function ApplicantDashboard() {
           }
         );
 
-        let data = await res.json();
-        {}[]
-        console.log(data);
-        if (typeof data === "string") data = JSON.parse(data);
-        if (Array.isArray(data)) setOffers(data);
-        else setOffers([]);
+        const data = await res.json();
+        console.log(data.body);
+      setOffers(JSON.parse(data.body));
       } catch (err) {
         console.error("Error fetching offers:", err);
         setOffers([]);
