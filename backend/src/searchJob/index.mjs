@@ -141,6 +141,7 @@ export const handler = async function (event) {
   }
 
   // --- Combine everything ---
+  let response = {}
   try {
     const totalResultCount = await countJobsByFilter({
       companyName,
@@ -155,7 +156,7 @@ export const handler = async function (event) {
       includeClosed,
     });
 
-    return {
+    response =  {
       statusCode: 200,
       pageNumber,
       totalResultCount,
@@ -164,9 +165,12 @@ export const handler = async function (event) {
       jobs,
     };
   } catch (err) {
-    return {
+    response = {
       statusCode: 400,
       error: err,
     };
   }
+  pool.end();
+  return response
 };
+
