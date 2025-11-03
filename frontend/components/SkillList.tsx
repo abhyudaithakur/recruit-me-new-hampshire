@@ -10,7 +10,7 @@ export function SkillList({ skills, setSkills }: skillListProps) {
 
   function onSkillClick(index: number) {
     const vals = skills.filter((x, i) => x.length > 0 || i == index);
-    let ik = new Set(vals);
+    const ik = new Set(vals);
     setSelectedSkill(index);
     setSkills([...ik]);
     return vals.slice();
@@ -23,7 +23,7 @@ export function SkillList({ skills, setSkills }: skillListProps) {
     index: number,
     e: ChangeEvent<HTMLInputElement>
   ) {
-    let sk2 = skills.map((x, i) => {
+    const sk2 = skills.map((x, i) => {
       if (i == index) {
         return e.target.value;
       } else {
@@ -85,7 +85,7 @@ export function SkillList({ skills, setSkills }: skillListProps) {
           })}
           <tr
             onClick={() => {
-              let iii = onSkillClick(skills.length);
+              const iii = onSkillClick(skills.length);
               iii.push("");
               setSkills(iii);
             }}>
