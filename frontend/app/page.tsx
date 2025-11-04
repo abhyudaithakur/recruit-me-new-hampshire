@@ -74,7 +74,7 @@ export default function ApplicantDashboard() {
 
   const credentials = useAuth();
 
-  const [offers, setOffers] = useState<{offer_id:number,title:string;company:string,status:string}[]>([]);
+  const [offers, setOffers] = useState<{offer_id:number,jobName:string;companyid:string,status:string}[]>([]);
 
   const [modal, setModal] = useState<{
     visible: boolean;
@@ -157,12 +157,12 @@ export default function ApplicantDashboard() {
     const fetchOffers = async () => {
       try {
         const res = await fetch(
-          "https://9irns1xx17.execute-api.us-east-1.amazonaws.com/temp/getOffers",
+          "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/getOffers",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              pathParameters: { applicantId: 1},
+              pathParameters: { applicantId: Number(credentials.userID)},
             }),
           }
         );
@@ -175,8 +175,15 @@ export default function ApplicantDashboard() {
         setOffers([]);
       }
     };
+    if (
+      !credentials.loading &&
+      credentials.credential &&
+      credentials.username
+    ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOffers();
-  }, []);
+    }
+  }, [credentials]);
 
   // Accept / Reject modal handlers
   const handleAction = (
@@ -191,10 +198,10 @@ export default function ApplicantDashboard() {
     const endpoint = action === "accept" ? "accept" : "reject";
 
     try {
-      const res = await fetch(`http://localhost:5001/offers/${endpoint}`, {
+      const res = await fetch(`https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offer_id: offerId }),
+        body: JSON.stringify({ offer_id: offerId, accept: endpoint+'ed' }),
       });
       const data = await res.json();
       console.log(data);
@@ -245,7 +252,7 @@ export default function ApplicantDashboard() {
                 .filter((o) => o.status === "offered")
                 .map((offer) => (
                   <li key={offer.offer_id} style={{ marginBottom: "10px" }}>
-                    {offer.title} - {offer.company} ({offer.status})
+                    {offer.jobName} - {offer.companyid} ({offer.status})
                     <div style={{ marginTop: "5px" }}>
                       <button
                         onClick={() => handleAction(offer.offer_id, "accept")}
@@ -274,7 +281,7 @@ export default function ApplicantDashboard() {
                 .filter((o) => o.status === "accepted")
                 .map((o) => (
                   <li key={o.offer_id}>
-                    {o.title} - {o.company}
+                    {o.jobName} - {o.companyid}
                   </li>
                 ))}
             </ul>

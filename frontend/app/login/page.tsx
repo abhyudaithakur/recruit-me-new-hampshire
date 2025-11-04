@@ -13,7 +13,7 @@ const Login: React.FC = () => {
   const [load, setLoad] = React.useState({visibility: 'hidden'} as React.CSSProperties)
   const [err, setErr] = React.useState('');
 
-  const { setCredential, setUserType,setUserName } = useAuth()
+  const { setCredential, setUserType,setUserName,setUserID } = useAuth()
 
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,6 +37,8 @@ const Login: React.FC = () => {
         setUserType(response.data.userType)
         document.cookie='username=' + username.value
         setUserName(username.value)
+        document.cookie='userID=' + response.data.userID
+        setUserID(response.data.userID)
         router.push('/')
       }else{
         setErr(response.data.error);
