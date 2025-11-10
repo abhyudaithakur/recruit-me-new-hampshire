@@ -185,7 +185,7 @@ export default function ApplicantTable({
                     onChange={(e) => changeRating(e, i)}
                     name="ApplicantRate"
                     id="ApplicantRate"
-                    defaultValue={x.status}></select>
+                    defaultValue={x.status.toLocaleUpperCase()}></select>
                   {x.status}
                 </td>
               </tr>
