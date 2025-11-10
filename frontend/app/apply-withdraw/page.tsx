@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const API =
@@ -42,7 +42,7 @@ type RespPanel =
   | { kind: "withdraw"; status: number; body: WithdrawOk | ErrorEnvelope | unknown }
   | { kind: "info"; status: number; body: unknown };
 
-export default function ApplyWithdraw() {
+function ApplyWithdraw() {
   // --- simple inputs (keep old workflow) ---
   const [jobId, setJobId] = useState("");
   const [applicantId, setApplicantId] = useState("");
@@ -284,4 +284,12 @@ export default function ApplyWithdraw() {
       </section>
     </main>
   );
+}
+
+export default function ApplyWithdrawSuspense(){
+  return(
+    <Suspense>
+      <ApplyWithdraw/>
+    </Suspense>
+  )
 }
