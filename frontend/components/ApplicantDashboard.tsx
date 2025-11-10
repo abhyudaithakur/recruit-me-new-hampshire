@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/components/AuthProvider";
+import { IAuthContext, useAuth } from "@/components/AuthProvider";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MouseEventHandler, useEffect, useState } from "react";
@@ -12,10 +12,11 @@ const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_STAGE,
 });
 
-
-
-export default function ApplicantDashboard() {
-  const router = useRouter();
+export default function ApplicantDashboard({
+  credentials,
+}: {
+  credentials: IAuthContext;
+}) {
 
   const [username, setUsername] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
@@ -24,9 +25,9 @@ export default function ApplicantDashboard() {
   } as React.CSSProperties);
   const [err, setErr] = useState("");
 
-  const credentials = useAuth();
-
-  const [offers, setOffers] = useState<{offer_id:number,jobName:string;companyid:string,status:string}[]>([]);
+  const [offers, setOffers] = useState<
+    { offer_id: number; jobName: string; companyid: string; status: string }[]
+  >([]);
 
   const [modal, setModal] = useState<{
     visible: boolean;
@@ -38,8 +39,8 @@ export default function ApplicantDashboard() {
     offerId: null,
   });
 
-  // get skills
   useEffect(() => {
+    // get skills
     function getSkillsFromDB(name: string) {
       const body = {
         name: name,
@@ -66,18 +67,41 @@ export default function ApplicantDashboard() {
           setLoad({ visibility: "hidden" });
         });
     }
-    if (!credentials.loading && !credentials.credential) {
-      router.push("/login");
-    } else if (
+    //get offers
+    const fetchOffers = async () => {
+      try {
+        const res = await fetch(
+          "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/getOffers",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              pathParameters: { applicantId: Number(credentials.userID) },
+            }),
+          }
+        );
+
+        const data = await res.json();
+        setOffers(JSON.parse(data.body));
+      } catch (err) {
+        console.error("Error fetching offers:", err);
+        setOffers([]);
+      }
+    };
+
+    if (
       !credentials.loading &&
       credentials.credential &&
       credentials.username
     ) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
+      // get skills
       setUsername(credentials.username);
       getSkillsFromDB(credentials.username);
+      //get offers
+      fetchOffers();
     }
-  }, [credentials, router]);
+  }, [credentials]);
 
   function sendSkillChanges() {
     const body = {
@@ -104,38 +128,6 @@ export default function ApplicantDashboard() {
         setLoad({ visibility: "hidden" });
       });
   }
-  // get offers
-  useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        const res = await fetch(
-          "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/getOffers",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              pathParameters: { applicantId: Number(credentials.userID)},
-            }),
-          }
-        );
-
-        const data = await res.json();
-        console.log(data.body);
-      setOffers(JSON.parse(data.body));
-      } catch (err) {
-        console.error("Error fetching offers:", err);
-        setOffers([]);
-      }
-    };
-    if (
-      !credentials.loading &&
-      credentials.credential &&
-      credentials.username
-    ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchOffers();
-    }
-  }, [credentials]);
 
   // Accept / Reject modal handlers
   const handleAction = (
@@ -150,13 +142,15 @@ export default function ApplicantDashboard() {
     const endpoint = action === "accept" ? "accept" : "reject";
 
     try {
-      const res = await fetch(`https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/accept`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offer_id: offerId, accept: endpoint+'ed' }),
-      });
+      const res = await fetch(
+        `https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/accept`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offer_id: offerId, accept: endpoint + "ed" }),
+        }
+      );
       const data = await res.json();
-      console.log(data);
 
       // Update local state
       setOffers((prev) =>
@@ -175,13 +169,6 @@ export default function ApplicantDashboard() {
 
   const cancelAction = () =>
     setModal({ visible: false, action: null, offerId: null });
-
-  if (credentials.userType == "Applicant") {
-    // get username and skills from db
-    // setUsername()
-    // setSkills()
-  } else if (credentials.userType == "Company") {
-  }
 
   return (
     <>
