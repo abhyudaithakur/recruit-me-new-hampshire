@@ -20,6 +20,8 @@ export default function RootLayout({
             <span> | </span>
             <Link href={'/search'}> Search</Link>
             <span> | </span>
+            <Link href={'/apply-withdraw'}> Apply or Withdraw</Link>
+            <span> | </span>
             <LogInOut/>
           </nav>
           {children}
