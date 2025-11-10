@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 import axios from "axios";
-import { on } from "events";
 import { FormEvent, useState } from "react";
 
 interface jobDescription {
@@ -10,45 +9,6 @@ interface jobDescription {
   jobStatus: "Open" | "Closed";
   skills: string[];
 }
-
-// const temp: jobDescription[] = [
-//   {
-//     jobName: "1",
-//     companyName: "2",
-//     jobStatus: "Open",
-//     skills: ["3", "4", "5"],
-//   },
-//   {
-//     jobName: "1",
-//     companyName: "2",
-//     jobStatus: "Open",
-//     skills: ["3", "4", "5"],
-//   },
-//   {
-//     jobName: "1",
-//     companyName: "2",
-//     jobStatus: "Open",
-//     skills: ["3", "4", "5"],
-//   },
-//   {
-//     jobName: "1",
-//     companyName: "2",
-//     jobStatus: "Open",
-//     skills: ["3", "4", "5"],
-//   },
-//   {
-//     jobName: "1",
-//     companyName: "2",
-//     jobStatus: "Open",
-//     skills: ["3", "4", "5"],
-//   },
-//   {
-//     jobName: "1",
-//     companyName: "2",
-//     jobStatus: "Open",
-//     skills: ["3", "4", "5"],
-//   },
-// ];
 
 const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_STAGE,
