@@ -19,8 +19,9 @@ const Login: React.FC = () => {
     e.preventDefault();
     const username = document.getElementById("username") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
+    const userType = document.getElementById("userType") as HTMLInputElement;
     setLoad({visibility: 'visible'})
-    instance.post('/login', {"username":username.value, "password":password.value}).then(function (response) {
+    instance.post('/login', {"username":username.value, "password":password.value, "userType":userType.value}).then(function (response) {
       const status = response.data.statusCode;
 
         // <MOCK> ***********************************************
@@ -56,8 +57,12 @@ const Login: React.FC = () => {
     <div className='content'>
         <h2>Log In</h2>
         <form onSubmit={handleLogin}>
+          <select name='userType' id='userType'>
+            <option value='applicant'>Applicant</option>
+            <option value='company'>Company</option>
+          </select>
           <input id='username' placeholder='Username'/>
-          <input id='password' placeholder='Password' type='password'/>
+          <input id='password' placeholder='Password' type='password'/> 
           <button type="submit">Log In</button>
           {/*eslint-disable-next-line @next/next/no-img-element*/}
           <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
