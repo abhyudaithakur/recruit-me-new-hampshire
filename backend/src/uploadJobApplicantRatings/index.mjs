@@ -10,7 +10,7 @@ export const handler = async (event) => {
   function checkCredentials(name, credential) {
     return new Promise((resolve, reject) => {
       pool.query(
-        "SELECT idapplicant FROM applicants WHERE applicantname=? and credential=?",
+        "SELECT idcompanies FROM companies WHERE companyName=? and credential=?",
         [name, credential],
         (error, rows) => {
           if (error) {
@@ -18,103 +18,114 @@ export const handler = async (event) => {
             reject("Database error");
           } else {
             // console.log("chek", rows);
-            resolve({ valid: rows.length != 0, id: rows[0]?rows[0].idapplicant:-1 });
+            resolve({
+              valid: rows.length != 0,
+              id: rows[0] ? rows[0].idcompanies : -1,
+            });
           }
         }
       );
     });
   }
 
-  function deleteApplicantSkills(id) {
+  function checkValidCompanyForJob(jobid, companyid) {
     return new Promise((resolve, reject) => {
       pool.query(
-        "DELETE FROM applicants_has_skills WHERE applicants_idapplicant=?",
-        [id],
+        "SELECT * FROM jobs WHERE jobid=? and companyid=?",
+        [jobid, companyid],
         (error, rows) => {
           if (error) {
-            // console.log("del", error);
+            // console.log("chek", error);
             reject("Database error");
           } else {
-            // console.log("del", rows);
-            resolve({ valid: rows.OkPacket !=null });
+            // console.log("chek", rows);
+            resolve({
+              valid: rows.length != 0,
+            });
           }
         }
       );
     });
   }
 
-  function insertApplicantSkills(id, skills) {
+  //function by chatgpt
+  function editApplicantReadiness(jobid, applicants) {
     return new Promise((resolve, reject) => {
-      pool.query(
-        "INSERT INTO applicants_has_skills VALUES ?",
-        [skills.map((x) => [id, x])],
-        (error, rows) => {
-          if (error) {
-            // console.log("ins", error);
-            reject("Database error");
-          } else {
-            // console.log("ins", rows);
-            resolve({ valid: rows.OkPacket !=null });
-          }
-        }
-      );
+      if (!Array.isArray(applicants) || applicants.length === 0) {
+        return reject("Applicant list is empty");
+      }
+
+      const connectionPromise = pool.getConnection();
+
+      connectionPromise
+        .then((conn) => {
+          // Use a transaction for safety
+          conn.beginTransaction(async (err) => {
+            if (err) {
+              conn.release();
+              return reject(err);
+            }
+
+            try {
+              // temp table -- removed when connection closes
+              await conn.query(`
+              CREATE TEMPORARY TABLE tmp_applicant_updates (
+                applicantid INT,
+                status VARCHAR(100)
+              );
+            `);
+
+              // insert date to temp table
+              const values = applicants.map((a) => [a.id, a.status]);
+              await conn.query(
+                "INSERT INTO tmp_applicant_updates (applicantid, status) VALUES ?",
+                [values]
+              );
+
+              // join for batch op
+              await conn.query(
+                `
+              UPDATE jobs_has_applicants AS j
+              JOIN tmp_applicant_updates AS t
+                ON j.applicants_idapplicant = t.applicantid
+              SET j.status = t.status
+              WHERE j.jobid = ?;
+              `,
+                [jobid]
+              );
+
+              // commit
+              await conn.commit();
+              conn.release();
+
+              resolve({ success: true, updated: applicants.length });
+            } catch (error) {
+              await conn.rollback();
+              conn.release();
+              reject(error);
+            }
+          });
+        })
+        .catch((err) => reject(err));
     });
   }
 
-  function getApplicantSkills(id) {
-    return new Promise((resolve, reject) => {
-      pool.query(
-        "SELECT skills_skillname FROM applicants_has_skills WHERE applicants_idapplicant=?",
-        [id],
-        (error, rows) => {
-          if (error) {
-            // console.log("get", error);
-
-            reject("Database error");
-          } else {
-            // console.log("get", rows);
-
-            resolve({ rows: rows });
-          }
-        }
-      );
-    });
-  }
-
-  function addSkillsToSkillTable(skills) {
-    return new Promise((resolve, reject) => {
-      pool.query(
-        `INSERT IGNORE INTO skill (skillname) VALUES ?`,
-        [skills.map((x) => [x])],
-        (error, rows) => {
-          if (error) {
-            // console.log("ski", error);
-            reject("Database error");
-          } else {
-            // console.log("ski", rows);
-            resolve({ valid: true });
-          }
-        }
-      );
-    });
-  }
-
-  async function editSkills(event) {
-    const { name, token, skills, userType } = event;
-    let checkResp = await checkCredentials(name, token);
+  async function dochanges(event) {
+    const { jobid, companyName, companyCredential, applicants } = event;
+    let checkResp = await checkCredentials(companyName, companyCredential);
     if (!checkResp.valid) {
       return { code: 401, message: "Not Authorized" };
     }
-    let addedSkills = (await addSkillsToSkillTable(skills)).valid;
-    if (!addedSkills) {
-      return { code: 400, message: "Bad Request" };
+    let checkvalidPair = await checkValidCompanyForJob(jobid, checkResp.id);
+    if (!checkvalidPair.valid) {
+      return { code: 401, message: "Not Authorized" };
     }
-    let id = checkResp.id
-    let deletResp = await deleteApplicantSkills(id);
-    let insertResp = await insertApplicantSkills(id, skills);
-    let { rows } = await getApplicantSkills(id);
-    let presentSkills = rows.map((x) => x.skills_skillname);
-    return { code: 200, skills: presentSkills };
+    let resp = editApplicantReadiness(jobid, applicants);
+    if (resp.success) {
+      return { code: 200, length: resp.updated };
+    } else {
+      return { code: 400, message: "Something whet wrong" };
+    }
   }
 
   let result = await editSkills(event);
@@ -123,8 +134,7 @@ export const handler = async (event) => {
   if (result.code == 200) {
     response = {
       statusCode: 200,
-      skills: result.skills,
-      userType: "Applicant",
+      success: true,
     };
   } else {
     response = {

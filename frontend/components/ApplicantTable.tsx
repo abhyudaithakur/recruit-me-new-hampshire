@@ -103,7 +103,12 @@ export default function ApplicantTable({
       .then(function (response) {
         const status = response.data.statusCode;
         if (status == 200) {
-          setApplicants(response.data.applicants);
+          searchApplicants({
+            jobid: jobID,
+            page: 1,
+            pageSize: pageSize,
+            status: status,
+          });
         } else {
           setErr(response.data.error);
         }
@@ -140,7 +145,7 @@ export default function ApplicantTable({
       jobid: jobID,
       page: pageNumber + 1 + (up ? 1 : -1),
       pageSize: pageSize,
-      status: status
+      status: status,
     });
   }
 

@@ -12,6 +12,50 @@ export const handler = async function (event) {
   const status = event.status || "active";
   const pageNumber = event.pageNumber || 1;
   const pageSize = event.pageSize || 10;
+  const companyName = event.companyName;
+  const companyCredential = event.companyCredential;
+
+  function checkCredentials(name, credential) {
+    return new Promise((resolve, reject) => {
+      pool.query(
+        "SELECT idcompanies FROM companies WHERE companyName=? and credential=?",
+        [name, credential],
+        (error, rows) => {
+          if (error) {
+            // console.log("chek", error);
+            reject("Database error");
+          } else {
+            // console.log("chek", rows);
+            resolve({
+              valid: rows.length != 0,
+              id: rows[0] ? rows[0].idcompanies : -1,
+            });
+          }
+        }
+      );
+    });
+  }
+
+  function checkValidCompanyForJob(jobid, companyid) {
+    return new Promise((resolve, reject) => {
+      pool.query(
+        "SELECT * FROM jobs WHERE jobid=? and companyid=?",
+        [jobid, companyid],
+        (error, rows) => {
+          if (error) {
+            // console.log("chek", error);
+            reject("Database error");
+          } else {
+            // console.log("chek", rows);
+            resolve({
+              valid: rows.length != 0,
+            });
+          }
+        }
+      );
+    });
+  }
+
   // function by chatgpt
   // --- Helper: Count matching applicants ---
   function countApplicantsByFilter({ jobid, status }) {
@@ -67,6 +111,14 @@ export const handler = async function (event) {
   // --- Combine everything ---
   let response;
   try {
+    const checkCred = await checkCredentials(companyName, companyCredential);
+    if (!checkCred.valid) {
+      throw new Error("Invalid Credentials");
+    }
+    const correctPair = await checkValidCompanyForJob(jobid, checkCred.id);
+    if (!correctPair.valid) {
+      throw new Error("Invalid Credentials");
+    }
     const totalResultCount = await countApplicantsByFilter({ jobid, status });
     const applicants = await getApplicantsByFilter({
       jobid,
