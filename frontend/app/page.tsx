@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import ApplicantDashboard from "@/components/ApplicantDashboard";
+import CompanyDashboard from "@/components/CompanyDashboard";
 
 const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_STAGE,
@@ -28,6 +29,8 @@ export default function Home() {
         <ApplicantDashboard credentials={credentials}></ApplicantDashboard>
       );
     } else if (credentials.userType == "company") {
+      return <CompanyDashboard></CompanyDashboard>
+      // return <CompanyDashboard credentials = {credentials}></CompanyDashboard>
     }
   } else {
     return (

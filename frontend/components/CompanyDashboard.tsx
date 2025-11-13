@@ -93,6 +93,7 @@ export default function CompanyDashboard() {
                     <td>Ear</td>
                     <td>3</td>
                     <td><button>close</button></td>
+                    <td><button>review</button></td>
                 </tr>
             </tbody>
         </table>
