@@ -1,9 +1,6 @@
 import { Axios } from "axios";
-import {
-  ChangeEvent,
-  useEffect,
-  useState,
-} from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+import { IAuthContext } from "./AuthProvider";
 
 interface ApplicantData {
   name: string;
@@ -19,12 +16,14 @@ export default function ApplicantTable({
   pageSize,
   instance,
   status,
+  credentails,
 }: {
   jobID: number;
   TableName: String;
   pageSize: number;
   instance: Axios;
   status: string;
+  credentails: IAuthContext;
 }) {
   const [applicants, setApplicants] = useState<ApplicantData[]>([]);
   const [load, setLoad] = useState({
@@ -54,6 +53,8 @@ export default function ApplicantTable({
       pageNumber: search.page,
       pageSize: search.pageSize,
       status: search.status,
+      companyName: credentails.username,
+      companyCredential: credentails.credential,
     };
 
     setLoad({ visibility: "visible" });
@@ -87,6 +88,8 @@ export default function ApplicantTable({
 
   function uploadRatings() {
     const body = {
+      companyName: credentails.username,
+      companyCredential: credentails.credential,
       jobid: jobID,
       applicants: applicants.map((x) => {
         return { id: x.id, status: x.status };
@@ -137,7 +140,7 @@ export default function ApplicantTable({
       jobid: jobID,
       page: pageNumber + 1 + (up ? 1 : -1),
       pageSize: pageSize,
-      status: status,
+      status: status
     });
   }
 
