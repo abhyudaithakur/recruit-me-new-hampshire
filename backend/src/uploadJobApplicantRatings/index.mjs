@@ -10,12 +10,12 @@ export const handler = async (event) => {
   function checkCredentials(name, credential) {
     return new Promise((resolve, reject) => {
       pool.query(
-        "SELECT idcompanies FROM companies WHERE companyName=? and credential=?",
+        "SELECT idcompanies FROM companies WHERE companyName = ? and credential = ?",
         [name, credential],
         (error, rows) => {
           if (error) {
             // console.log("chek", error);
-            reject("Database error");
+            reject("Database error" + error);
           } else {
             // console.log("chek", rows);
             resolve({
@@ -55,58 +55,69 @@ export const handler = async (event) => {
         return reject("Applicant list is empty");
       }
 
-      const connectionPromise = pool.getConnection();
+      // convert callback API to promise
+      pool.getConnection((err, conn) => {
+        if (err) return reject(err);
 
-      connectionPromise
-        .then((conn) => {
-          // Use a transaction for safety
-          conn.beginTransaction(async (err) => {
-            if (err) {
-              conn.release();
-              return reject(err);
-            }
+        conn.beginTransaction(async (err) => {
+          if (err) {
+            conn.release();
+            return reject(err);
+          }
 
-            try {
-              // temp table -- removed when connection closes
-              await conn.query(`
-              CREATE TEMPORARY TABLE tmp_applicant_updates (
-                applicantid INT,
-                status VARCHAR(100)
-              );
-            `);
+          try {
+            // Create temp table
+            await new Promise((res, rej) =>
+              conn.query(
+                `CREATE TEMPORARY TABLE tmp_applicant_updates (
+                  applicantid INT,
+                  status VARCHAR(100)
+                )`,
+                (e) => (e ? rej(e) : res())
+              )
+            );
 
-              // insert date to temp table
-              const values = applicants.map((a) => [a.id, a.status]);
-              await conn.query(
+            // Insert rows
+            const values = applicants.map((a) => [a.id, a.status]);
+
+            await new Promise((res, rej) =>
+              conn.query(
                 "INSERT INTO tmp_applicant_updates (applicantid, status) VALUES ?",
-                [values]
-              );
+                [values],
+                (e) => (e ? rej(e) : res())
+              )
+            );
 
-              // join for batch op
-              await conn.query(
+            // Update join
+            await new Promise((res, rej) =>
+              conn.query(
                 `
-              UPDATE jobs_has_applicants AS j
-              JOIN tmp_applicant_updates AS t
-                ON j.applicants_idapplicant = t.applicantid
-              SET j.status = t.status
-              WHERE j.jobid = ?;
-              `,
-                [jobid]
-              );
+                  UPDATE jobs_has_applicants AS j
+                  JOIN tmp_applicant_updates AS t
+                  ON j.applicants_idapplicant = t.applicantid
+                  SET j.status_statusType = t.status
+                  WHERE j.jobs_jobid = ?
+                `,
+                [jobid],
+                (e) => (e ? rej(e) : res())
+              )
+            );
 
-              // commit
-              await conn.commit();
-              conn.release();
+            // Commit
+            await new Promise((res, rej) =>
+              conn.commit((e) => (e ? rej(e) : res()))
+            );
 
-              resolve({ success: true, updated: applicants.length });
-            } catch (error) {
-              await conn.rollback();
+            conn.release();
+            resolve({ success: true, updated: applicants.length });
+          } catch (error) {
+            conn.rollback(() => {
               conn.release();
               reject(error);
-            }
-          });
-        })
-        .catch((err) => reject(err));
+            });
+          }
+        });
+      });
     });
   }
 
@@ -120,7 +131,7 @@ export const handler = async (event) => {
     if (!checkvalidPair.valid) {
       return { code: 401, message: "Not Authorized" };
     }
-    let resp = editApplicantReadiness(jobid, applicants);
+    let resp = await editApplicantReadiness(jobid, applicants);
     if (resp.success) {
       return { code: 200, length: resp.updated };
     } else {
@@ -128,7 +139,7 @@ export const handler = async (event) => {
     }
   }
 
-  let result = await editSkills(event);
+  let result = await dochanges(event);
 
   let response = {};
   if (result.code == 200) {
@@ -139,7 +150,7 @@ export const handler = async (event) => {
   } else {
     response = {
       statusCode: result.code,
-      error: result.message,
+      error: result.message ? result.message : result,
     };
   }
   return response;

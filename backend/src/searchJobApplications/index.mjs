@@ -111,6 +111,9 @@ export const handler = async function (event) {
   // --- Combine everything ---
   let response;
   try {
+    if (!jobid) {
+      throw new Error("Invalid Job ID");
+    }
     const checkCred = await checkCredentials(companyName, companyCredential);
     if (!checkCred.valid) {
       throw new Error("Invalid Credentials");
@@ -140,7 +143,7 @@ export const handler = async function (event) {
   } catch (err) {
     response = {
       statusCode: 400,
-      body: JSON.stringify({ error: err }),
+      body: JSON.stringify({ error: err.message ? err.message : err }),
     };
   }
 
