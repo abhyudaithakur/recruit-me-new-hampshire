@@ -1,6 +1,6 @@
 "use client";
 
-import { IAuthContext, useAuth } from "@/components/AuthProvider";
+import { IAuthContext, updateCookie, useAuth } from "@/components/AuthProvider";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MouseEventHandler, useEffect, useState } from "react";
@@ -171,6 +171,9 @@ export default function ApplicantDashboard({
 
   const [edit, setEdit] = useState(false);
 
+
+useEffect(()=>{updateCookie(credentials)},[credentials])
+
 const updateName = () => {
         setEdit(false)
 
@@ -186,7 +189,9 @@ const updateName = () => {
             setLoad({visibility: 'hidden'})
 
             if (status == 200) {
-                setUsername(name.value)
+                setUsername(response.data.newName)
+                credentials.setUserName(response.data.newName)
+                // updateCookie(credentials)
             }else{
                 setErr(response.data.error);
             }

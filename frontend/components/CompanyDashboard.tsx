@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from "next/navigation";
 // import { useEffect, useState } from "react";
-import { useAuth } from "./AuthProvider";
+import { updateCookie, useAuth } from "./AuthProvider";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -28,6 +28,8 @@ export default function CompanyDashboard() {
         }
     })
     
+    
+    useEffect(()=>{updateCookie(allCreds)},[allCreds])
     const updateName = () => {
         setEditing(false)
 

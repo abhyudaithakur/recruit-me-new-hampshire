@@ -13,6 +13,12 @@ export interface IAuthContext{
     setUserID:Dispatch<SetStateAction<string>>
 }
 
+export function updateCookie(credential:IAuthContext){
+        document.cookie = 'credential=' + credential.credential
+        document.cookie='userType=' + credential.userType
+        document.cookie='username=' + credential.username
+}
+
 const AuthContext = createContext<IAuthContext>({
     credential: '',
     setCredential: () => {},
