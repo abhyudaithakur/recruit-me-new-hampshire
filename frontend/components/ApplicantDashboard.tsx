@@ -17,7 +17,6 @@ export default function ApplicantDashboard({
 }: {
   credentials: IAuthContext;
 }) {
-
   const [username, setUsername] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [load, setLoad] = useState({
@@ -170,9 +169,55 @@ export default function ApplicantDashboard({
   const cancelAction = () =>
     setModal({ visible: false, action: null, offerId: null });
 
+  const [edit, setEdit] = useState(false);
+
+const updateName = () => {
+        setEdit(false)
+
+        const name = document.getElementById("username") as HTMLInputElement;
+        if(name.value == ''){
+            setErr('Invalid name')
+            return
+        }
+    
+        setLoad({visibility: 'visible'})
+        instance.post('/applicantName', {"newName":name.value, "oldName":username, "credendtial":credentials.credential}).then(function (response) {
+            const status = response.data.statusCode;
+            setLoad({visibility: 'hidden'})
+
+            if (status == 200) {
+                setUsername(name.value)
+            }else{
+                setErr(response.data.error);
+            }
+
+        })
+        .catch(function (error: React.SetStateAction<string>) {
+            setErr('failed to register: ' + error);
+            setLoad({visibility: 'hidden'})
+        })
+    }
+
   return (
     <>
-      <h2>Home Page for {username}</h2>
+      {edit ? (
+        <>
+          {" "}
+          <label htmlFor="username">username </label>
+          <input type="text" id="username" defaultValue={username} />
+          <button onClick={updateName}>update</button>
+        </>
+      ) : (
+        <>
+          <h2>Home Page for {username}</h2>
+          <button
+            onClick={() => {
+              setEdit(true);
+            }}>
+            edit
+          </button>
+        </>
+      )}
       <SkillList skills={skills} setSkills={setSkills}></SkillList>
       <button type="submit" onClick={sendSkillChanges}>
         Submit Changes
