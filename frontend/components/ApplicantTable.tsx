@@ -1,5 +1,5 @@
 import { Axios } from "axios";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, Dispatch, SetStateAction, useEffect, useState } from "react";
 import { IAuthContext } from "./AuthProvider";
 
 interface ApplicantData {
@@ -17,6 +17,7 @@ export default function ApplicantTable({
   instance,
   status,
   credentails,
+
 }: {
   jobID: number;
   TableName: String;
@@ -42,7 +43,7 @@ export default function ApplicantTable({
     });
   }, []);
 
-  function searchApplicants(search: {
+  async function searchApplicants(search: {
     jobid: number;
     page: number;
     pageSize: number;
@@ -59,21 +60,18 @@ export default function ApplicantTable({
 
     setLoad({ visibility: "visible" });
 
-    instance
-      .post("/searchJobApplicants", body)
+    await instance
+      .post("/searchJobApplications", body)
       .then(function (response) {
         const status = response.data.statusCode;
         if (status == 200) {
-          setPageNumber(response.data.pageNumber - 1);
+          let body = JSON.parse(response.data.body);
+          setPageNumber(body.pageNumber - 1);
           setTotalPages(
-            Math.max(
-              0,
-              Math.ceil(
-                response.data.totalResultCount / response.data.pageSize
-              ) - 1
-            )
+            Math.max(0, Math.ceil(body.totalResultCount / body.pageSize) - 1)
           );
-          setApplicants(response.data.applicants);
+
+          setApplicants(body.applicants);
         } else {
           setErr(response.data.error);
         }
@@ -86,7 +84,7 @@ export default function ApplicantTable({
       });
   }
 
-  function uploadRatings() {
+  async function uploadRatings() {
     const body = {
       companyName: credentails.username,
       companyCredential: credentails.credential,
@@ -98,7 +96,7 @@ export default function ApplicantTable({
 
     setLoad({ visibility: "visible" });
 
-    instance
+    await instance
       .post("/uploadJobApplicantRatings", body)
       .then(function (response) {
         const status = response.data.statusCode;
@@ -119,28 +117,26 @@ export default function ApplicantTable({
       .finally(() => {
         setLoad({ visibility: "hidden" });
       });
+
   }
-  let timeoutHandle = 0;
-  function sendChange(forceChange: boolean) {
-    if (timeoutHandle > 0) {
-      clearTimeout(timeoutHandle);
-      timeoutHandle = 0;
-    }
-    if (!forceChange) {
-      timeoutHandle = window.setTimeout(uploadRatings, 5000);
-    } else {
-      uploadRatings();
-    }
+  async function sendChange() {
+      await uploadRatings();
+      searchApplicants({
+      jobid: jobID,
+      page: 1,
+      pageSize: pageSize,
+      status: status,
+    });
   }
   function changeRating(e: ChangeEvent<HTMLSelectElement>, index: number) {
     let a = applicants.slice();
     a[index].status = e.target.value;
     setApplicants(a);
-    sendChange(false);
+    // sendChange(false);
   }
 
-  function onPage(up: boolean) {
-    sendChange(true);
+  async function onPage(up: boolean) {
+    await sendChange();
     searchApplicants({
       jobid: jobID,
       page: pageNumber + 1 + (up ? 1 : -1),
@@ -149,8 +145,9 @@ export default function ApplicantTable({
     });
   }
 
+  // console.log(applicants)
   return (
-    <>
+    <div>
       <style>
         {`
           // tr {line-height:1em;}
@@ -185,16 +182,17 @@ export default function ApplicantTable({
                 </td>
                 <td>
                   <label htmlFor="ApplicantRate">
-                    <option value="Hirable">Hirable</option>
-                    <option value="Wait">Wait</option>
-                    <option value="Unacceptable">Unacceptable</option>
+                    is 
+                    <select
+                      onChange={(e) => changeRating(e, i)}
+                      name="ApplicantRate"
+                      id="ApplicantRate"
+                      defaultValue={x.status}>
+                      <option value="Hirable">Hirable</option>
+                      <option value="Wait">Waiting</option>
+                      <option value="Unacceptable">Unacceptable</option>
+                    </select>
                   </label>
-                  <select
-                    onChange={(e) => changeRating(e, i)}
-                    name="ApplicantRate"
-                    id="ApplicantRate"
-                    defaultValue={x.status.toLocaleUpperCase()}></select>
-                  {x.status}
                 </td>
               </tr>
             );
@@ -236,10 +234,10 @@ export default function ApplicantTable({
       <button
         type="button"
         onClick={() => {
-          sendChange(true);
+          sendChange();
         }}>
-        Apply changes
+        Update
       </button>
-    </>
+    </div>
   );
 }

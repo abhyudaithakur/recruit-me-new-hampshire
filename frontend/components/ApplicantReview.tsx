@@ -1,6 +1,7 @@
 import { Axios } from "axios";
 import ApplicantTable from "./ApplicantTable";
 import { IAuthContext } from "./AuthProvider";
+import { useState } from "react";
 
 interface ApplicantReviewProps {
   jobID: number;
@@ -15,7 +16,8 @@ export default function ApplicantReview({
   instance,
   credentails,
 }: ApplicantReviewProps) {
-  const pageSize = 2;
+  const pageSize = 5;
+
 
   return (
     <>
@@ -23,7 +25,7 @@ export default function ApplicantReview({
         Applicants for {jobName}: {jobID}
       </h1>
 
-      <div>
+      <div style={{display:"flex",flexWrap:"wrap", gridTemplateColumns:"auto auto auto",gap:30}}>
         <ApplicantTable
           jobID={jobID}
           credentails={credentails}
@@ -53,6 +55,7 @@ export default function ApplicantReview({
           TableName={"Active"}
           status="active"></ApplicantTable>
       </div>
+      {/* <button type="button" onClick={()=>setUpdate2()}>Update</button> */}
     </>
   );
 }

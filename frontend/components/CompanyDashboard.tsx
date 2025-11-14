@@ -11,8 +11,8 @@ const instance = axios.create({
 
 export default function CompanyDashboard() {
     const router = useRouter();
-
-    const {loading, credential, username, setUserName} = useAuth()
+    const allCreds = useAuth()
+    const {loading, credential, username, setUserName} =allCreds
 
     const [editing, setEditing] = useState(false)
     const [load, setLoad] = useState({visibility: 'hidden'} as React.CSSProperties)
@@ -58,10 +58,14 @@ export default function CompanyDashboard() {
     return (
         <>
         {editing ? 
-            <><input type='text' id='username' defaultValue={username}/><button onClick={updateName}>update</button></>: 
+            <> <label htmlFor="username">username </label><input type='text' id='username' defaultValue={username}/><button onClick={updateName}>update</button></>: 
             <><h2>Home Page for {username}</h2><button onClick={() => {setEditing(true)}}>edit</button></>
         }
         {/*eslint-disable-next-line @next/next/no-img-element*/}
+
+         {/*
+         When viewing job applicants use this  V-- axios instance passsesd in so we don't have 50 of them
+         // return <ApplicantReview instance={instance} jobID={jobid} jobName={jobname} credentails={allCreds}></ApplicantReview> */}
         <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
         <label className="error">{err}</label>
         <h3>Inactive Jobs</h3>
