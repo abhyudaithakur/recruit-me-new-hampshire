@@ -1,7 +1,7 @@
 'use client'
 import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 
-interface IAuthContext{
+export interface IAuthContext{
     credential: string
     setCredential: Dispatch<SetStateAction<string>>,
     loading: boolean,
@@ -11,6 +11,12 @@ interface IAuthContext{
     setUserName:Dispatch<SetStateAction<string>>
     userID: string,
     setUserID:Dispatch<SetStateAction<string>>
+}
+
+export function updateCookie(credential:IAuthContext){
+        document.cookie = 'credential=' + credential.credential
+        document.cookie='userType=' + credential.userType
+        document.cookie='username=' + credential.username
 }
 
 const AuthContext = createContext<IAuthContext>({
@@ -39,7 +45,6 @@ const AuthProvider = ({ children }: Readonly<{children: React.ReactNode}>) => {
         const ut = document.cookie.split("; ").find((row) => row.startsWith("userType="))?.split("=")[1];
         const un = document.cookie.split("; ").find((row) => row.startsWith("username="))?.split("=")[1];
         const uid = document.cookie.split("; ").find((row) => row.startsWith("userID="))?.split("=")[1];
-        console.log(uid)
         if(cred){
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setCredential(cred)

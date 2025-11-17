@@ -20,6 +20,7 @@ const SignUp: React.FC = () => {
     const username = document.getElementById("username") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const verify = document.getElementById("verify-password") as HTMLInputElement;
+    const userType = document.getElementById("userType") as HTMLInputElement;
 
     if(password.value != verify.value){
       setErr('Passwords do not match!')
@@ -27,7 +28,7 @@ const SignUp: React.FC = () => {
     }
 
     setLoad({visibility: 'visible'})
-    instance.post('/signup', {"username":username.value, "password":password.value}).then(function (response) {
+    instance.post('/signup', {"username":username.value, "password":password.value, "userType":userType.value}).then(function (response) {
       const status = response.data.statusCode;
 
       // <MOCK> ***********************************************
@@ -72,6 +73,10 @@ const SignUp: React.FC = () => {
     <div className='content'>
         <h2>Sign Up</h2>
         <form onSubmit={handleSignup}>
+          <select name='userType' id='userType'>
+            <option value='applicant'>Applicant</option>
+            <option value='company'>Company</option>
+          </select>
           <input id='username' placeholder='Username'/>
           <input id='password' placeholder='Password' type='password'/>
           <input id='verify-password' placeholder='Verify password' type='password'onChange={checkPass}/>
@@ -80,7 +85,7 @@ const SignUp: React.FC = () => {
           <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
           <label className="error">{err}</label>
         </form>
-        <a href='/signup'>Already have an account? Log In!</a>
+        <a href='/login'>Already have an account? Log In!</a>
     </div>
   );
 }
