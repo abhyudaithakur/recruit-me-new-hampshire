@@ -8,23 +8,21 @@ export const handler = async function (event) {
     database: process.env.DB_NAME,
   });
 
-  let companyName = event.companyName;
-  let skills = event.skills;
-  let pageNumber = event.pageNumber;
-  let pageSize = event.pageSize;
-  let includeClosed = event.includeClosed ? true : false;
+  let skills = event.skills || [];
 
   //function by chatgpt
-  function buildJobSearchQuery({
-    skills = [],
-  }) {
+  function buildApplicantSearchQuery({ skills = [] }) {
+    if (skills.length === 0) {
+      return {
+        countSql: `SELECT COUNT(*) AS total FROM applicants`,
+        params: [],
+      };
+    }
+
+    // ---- CASE 2: Skill filter enabled ----
     const params = [];
 
-
-    // Skills filter
-    let skillsFilter = "";
-    if (skills.length > 0) {
-      skillsFilter = `
+    const skillsFilter = `
       WHERE s.applicants_idapplicant IN (
         SELECT inner_s.applicants_idapplicant
         FROM applicants_has_skills inner_s
@@ -35,36 +33,27 @@ export const handler = async function (event) {
         HAVING COUNT(DISTINCT LOWER(inner_s.skills_skillname)) = ?
       )
     `;
-      for (const skill of skills) params.push(skill.toLowerCase());
-      params.push(skills.length);
-    }
-
+    for (const skill of skills) params.push(skill.toLowerCase());
+    params.push(skills.length);
 
     const countSql = `
-    SELECT COUNT(*) AS total
-    FROM applicants j
-    JOIN (
-        SELECT 
-          s.applicants_idapplicant
-        FROM applicants_has_skills s
-        ${skillsFilter}
-        GROUP BY s.applicants_idapplicant
-    ) b ON j.idapplicant = b.applicants_idapplicant
-  `;
+      SELECT COUNT(*) AS total
+      FROM applicants j
+      JOIN (
+          SELECT s.applicants_idapplicant
+          FROM applicants_has_skills s
+          ${skillsFilter}
+          GROUP BY s.applicants_idapplicant
+      ) b ON j.idapplicant = b.applicants_idapplicant
+    `;
 
-    return {
-      countSql,
-      params,
-    };
+    return { countSql, params };
   }
 
-  //function by chatgpt
-  function searchJobs(filters) {
+  function searchApplicants(filters) {
     return new Promise((resolve, reject) => {
-      const { countSql, params} =
-        buildJobSearchQuery(filters);
+      const { countSql, params } = buildApplicantSearchQuery(filters);
 
-      // 1. Get total result count (no pagination)
       pool.query(countSql, params, (err, countRows) => {
         if (err) return reject(err);
 
@@ -79,26 +68,19 @@ export const handler = async function (event) {
   // --- Combine everything ---
   let response = {};
   try {
-    const jobs = await searchJobs({
-      companyName,
-      skills,
-      pageNumber,
-      pageSize,
-      includeClosed,
-    });
+    const result = await searchApplicants({ skills });
 
     response = {
       statusCode: 200,
-      ...jobs,
+      ...result,
     };
   } catch (err) {
     response = {
       statusCode: 400,
-      error: err,
+      error: err.toString(),
     };
   }
+
   pool.end();
   return response;
 };
-
-console.log(await handler({skills:[]}))
