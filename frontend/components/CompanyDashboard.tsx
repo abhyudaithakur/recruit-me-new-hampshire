@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { updateCookie, useAuth } from "./AuthProvider";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import CountMatchingApplicants from "./countMatchingApplicants";
+import ApplicantReview from "./ApplicantReview";
 
 interface jobItem{
     jobName: string,
     numApplicants: number,
-    numHired: number
+    numHired: number,
+    jobid: number
 }
 
 const instance = axios.create({
@@ -136,7 +137,7 @@ export default function CompanyDashboard() {
                         <td>{item.jobName}</td>
                         <td>{item.numApplicants}</td>
                         <td><button>close</button></td>
-                        <td><button>review</button></td>
+                        <td><ApplicantReview jobID={item.jobid} jobName={item.jobName} instance={instance} credentails={allCreds}/></td>
                     </tr>
                 ))}
             </tbody>

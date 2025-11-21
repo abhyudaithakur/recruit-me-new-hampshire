@@ -21,10 +21,6 @@ export default function ApplicantReview({
 
   return (
     <>
-      <h1>
-        Applicants for {jobName}: {jobID}
-      </h1>
-
       <div style={{display:"flex",flexWrap:"wrap", gridTemplateColumns:"auto auto auto",gap:30}}>
         <ApplicantTable
           jobID={jobID}
