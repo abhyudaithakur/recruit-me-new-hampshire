@@ -21,7 +21,7 @@ export default function CompanyDashboard() {
     const {loading, credential, username, setUserName} =allCreds
 
     const [editing, setEditing] = useState(false)
-    const [load, setLoad] = useState({visibility: 'hidden'} as React.CSSProperties)
+    const [load, setLoad] = useState({visibility: 'visible'} as React.CSSProperties)
     const [err, setErr] = useState('');
 
     const [draft, setDraft] = useState([] as jobItem[])

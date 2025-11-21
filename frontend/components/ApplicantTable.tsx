@@ -9,7 +9,7 @@ interface ApplicantData {
   status: string;
 }
 
-let timeoutHandle = 0;
+const timeoutHandle = 0;
 export default function ApplicantTable({
   jobID,
   TableName,
@@ -20,7 +20,7 @@ export default function ApplicantTable({
 
 }: {
   jobID: number;
-  TableName: String;
+  TableName: string;
   pageSize: number;
   instance: Axios;
   status: string;
@@ -28,20 +28,11 @@ export default function ApplicantTable({
 }) {
   const [applicants, setApplicants] = useState<ApplicantData[]>([]);
   const [load, setLoad] = useState({
-    visibility: "hidden",
+    visibility: "visible",
   } as React.CSSProperties);
   const [err, setErr] = useState("");
   const [pageNumber, setPageNumber] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
-
-  useEffect(() => {
-    searchApplicants({
-      jobid: jobID,
-      page: 1,
-      pageSize: pageSize,
-      status: status,
-    });
-  }, []);
 
   async function searchApplicants(search: {
     jobid: number;
@@ -58,14 +49,12 @@ export default function ApplicantTable({
       companyCredential: credentails.credential,
     };
 
-    setLoad({ visibility: "visible" });
-
     await instance
       .post("/searchJobApplications", body)
       .then(function (response) {
         const status = response.data.statusCode;
         if (status == 200) {
-          let body = JSON.parse(response.data.body);
+          const body = JSON.parse(response.data.body);
           setPageNumber(body.pageNumber - 1);
           setTotalPages(
             Math.max(0, Math.ceil(body.totalResultCount / body.pageSize) - 1)
@@ -83,6 +72,15 @@ export default function ApplicantTable({
         setLoad({ visibility: "hidden" });
       });
   }
+
+    useEffect(() => {
+      searchApplicants({
+        jobid: jobID,
+        page: 1,
+        pageSize: pageSize,
+        status: status,
+      });
+    }, []);
 
   async function uploadRatings() {
     const body = {
@@ -129,7 +127,7 @@ export default function ApplicantTable({
     });
   }
   function changeRating(e: ChangeEvent<HTMLSelectElement>, index: number) {
-    let a = applicants.slice();
+    const a = applicants.slice();
     a[index].status = e.target.value;
     setApplicants(a);
     // sendChange(false);

@@ -93,7 +93,7 @@ export default function ApplicantDashboard({
       credentials.credential &&
       credentials.username
     ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       // get skills
       setUsername(credentials.username);
       getSkillsFromDB(credentials.username);
