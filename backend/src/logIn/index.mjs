@@ -44,7 +44,7 @@ export const handler = async (event) => {
         statusCode: 200,
         credential: result.credential[0].credential,
         userType: result.userType,
-        userID: result.credential[0].idapplicant
+        userID: result.userType === "applicant" ? result.credential[0].idapplicant : result.credential[0].idcompanies
       }
     }else{
       response = {

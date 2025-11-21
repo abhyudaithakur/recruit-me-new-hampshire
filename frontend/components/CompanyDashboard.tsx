@@ -6,6 +6,12 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import CountMatchingApplicants from "./countMatchingApplicants";
 
+interface jobItem{
+    jobName: string,
+    numApplicants: number,
+    numHired: number
+}
+
 const instance = axios.create({
     baseURL:process.env.NEXT_PUBLIC_API_STAGE
   })
@@ -19,18 +25,43 @@ export default function CompanyDashboard() {
     const [load, setLoad] = useState({visibility: 'hidden'} as React.CSSProperties)
     const [err, setErr] = useState('');
 
+    const [draft, setDraft] = useState([] as jobItem[])
+    const [open, setOpen] = useState([] as jobItem[])
+    const [closed, setClosed] = useState([] as jobItem[])
+
+    const getData = () => {
+        instance.post('/reviewCompany', {"companyName":username}).then(function (response) {
+            const status = response.data.statusCode;
+            setLoad({visibility: 'hidden'})
+
+            if (status == 200) {
+                setDraft(response.data.draft.rows)
+                setOpen(response.data.open.rows)
+                setClosed(response.data.closed.rows)
+            }else{
+                setErr(response.data.error);
+            }
+
+        })
+        .catch(function (error: React.SetStateAction<string>) {
+            setErr('Error: ' + error);
+            setLoad({visibility: 'hidden'})
+        })
+    }
+
     useEffect(() => {
         if(!loading){
             if(!credential){
                 router.replace('/login')
-            }else{
-
             }
         }
     })
+
+    useEffect(getData, [username])
     
     
     useEffect(()=>{updateCookie(allCreds)},[allCreds])
+
     const updateName = () => {
         setEditing(false)
 
@@ -58,19 +89,19 @@ export default function CompanyDashboard() {
         })
     }
 
+
     return (
         <>
         {editing ? 
             <> <label htmlFor="username">username </label><input type='text' id='username' defaultValue={username}/><button onClick={updateName}>update</button></>: 
             <><h2>Home Page for {username}</h2><button onClick={() => {setEditing(true)}}>edit</button></>
         }
-        {/*eslint-disable-next-line @next/next/no-img-element*/}
 
          {/*
          When viewing job applicants use this  V-- axios instance passsesd in so we don't have 50 of them
-         // return <ApplicantReview instance={instance} jobID={jobid} jobName={jobname} credentails={allCreds}></ApplicantReview> */
+         // return <ApplicantReview instance={instance} jobID={jobid} jobName={jobname} credentails={allCreds}></ApplicantReview>
         // <CountMatchingApplicants instance={instance}></CountMatchingApplicants>
-         }
+         eslint-disable-next-line @next/next/no-img-element */}
         <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
         <label className="error">{err}</label>
         <h3>Inactive Jobs</h3>
@@ -82,11 +113,13 @@ export default function CompanyDashboard() {
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>eatery</td>
-                    <td><button>edit</button></td>
-                    <td><button>open</button></td>
-                </tr>
+                {draft.map((item) => (
+                    <tr key={item.jobName}>
+                        <td>{item.jobName}</td>
+                        <td><button>edit</button></td>
+                        <td><button>open</button></td>
+                    </tr>
+                ))}
             </tbody>
         </table>
         <h3>Open Jobs</h3>
@@ -98,12 +131,14 @@ export default function CompanyDashboard() {
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Ear</td>
-                    <td>3</td>
-                    <td><button>close</button></td>
-                    <td><button>review</button></td>
-                </tr>
+                {open.map((item) => (
+                    <tr key={item.jobName}>
+                        <td>{item.jobName}</td>
+                        <td>{item.numApplicants}</td>
+                        <td><button>close</button></td>
+                        <td><button>review</button></td>
+                    </tr>
+                ))}
             </tbody>
         </table>
         <h3>Closed Jobs</h3>
@@ -115,10 +150,13 @@ export default function CompanyDashboard() {
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>head of cabbage</td>
-                    <td>2</td>
-                </tr>
+                {closed.map((item) => (
+                    <tr key={item.jobName}>
+                        <td>{item.jobName}</td> 
+                        <td>{item.numHired}</td>
+                    </tr>
+                ))}
+
             </tbody>
         </table>
         </>
