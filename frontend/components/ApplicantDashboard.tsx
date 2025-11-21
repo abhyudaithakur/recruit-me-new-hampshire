@@ -17,6 +17,7 @@ export default function ApplicantDashboard({
 }: {
   credentials: IAuthContext;
 }) {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [load, setLoad] = useState({
@@ -221,6 +222,12 @@ const updateName = () => {
             }}>
             edit
           </button>
+          <button
+        onClick={() => router.push("/jobs")}
+        className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+      >
+        Jobs
+      </button>
         </>
       )}
       <SkillList skills={skills} setSkills={setSkills}></SkillList>

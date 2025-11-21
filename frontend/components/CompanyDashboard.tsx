@@ -69,55 +69,18 @@ export default function CompanyDashboard() {
          When viewing job applicants use this  V-- axios instance passsesd in so we don't have 50 of them
          // return <ApplicantReview instance={instance} jobID={jobid} jobName={jobname} credentails={allCreds}></ApplicantReview> */}
         <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
+
+<button
+        onClick={() => router.push("/jobs")}
+        className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+      >
+        Jobs
+      </button>
+
         <label className="error">{err}</label>
-        <h3>Inactive Jobs</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>eatery</td>
-                    <td><button>edit</button></td>
-                    <td><button>open</button></td>
-                </tr>
-            </tbody>
-        </table>
-        <h3>Open Jobs</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Applied</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Ear</td>
-                    <td>3</td>
-                    <td><button>close</button></td>
-                    <td><button>review</button></td>
-                </tr>
-            </tbody>
-        </table>
-        <h3>Closed Jobs</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Hired</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>head of cabbage</td>
-                    <td>2</td>
-                </tr>
-            </tbody>
-        </table>
+
+
+
         </>
     );
 }
