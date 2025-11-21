@@ -131,9 +131,10 @@ export default function search() {
                   <td>{x.jobName}</td>
                   <td>
                     <p>
-                      {x.skills.reduce((x, c, id) => {
+                      {x.skills}
+                      {/* {x.skills.reduce((x, c, id) => {
                         return id == 0 ? c : x + ", " + c;
-                      }, "")}
+                      }, "")} */}
                     </p>
                   </td>
                 </tr>

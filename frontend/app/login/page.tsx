@@ -32,6 +32,9 @@ const Login: React.FC = () => {
         // </MOCK> ***********************************************
 
       if (status == 200) {
+        console.log("below")
+        console.log(response.data)
+        console.log(response.data.idcompanies)
         document.cookie = 'credential=' + response.data.credential
         setCredential(response.data.credential)
         document.cookie='userType=' + response.data.userType
