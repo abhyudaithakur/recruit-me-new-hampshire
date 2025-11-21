@@ -1,5 +1,6 @@
 import mysql from "mysql";
 
+// function updated by chatgpt 
 export const handler = async function (event) {
   var pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -9,168 +10,286 @@ export const handler = async function (event) {
   });
 
   let companyName = event.companyName;
-  let skills = event.skills;
-  let pageNumber = event.pageNumber;
-  let pageSize = event.pageSize;
+  let skills = event.skills || [];
+  let pageNumber = event.pageNumber ?? 1;
+  let pageSize = event.pageSize ?? 20;
   let includeClosed = event.includeClosed ? true : false;
-  // --- Helper: Count matching jobs --- // function by chatgpt
-  function countJobsByFilter({
-    companyName = null,
+
+  // -----------------------------
+  // QUERY BUILDERS
+  // -----------------------------
+
+  // FILTERED SEARCH (skills + optional company)
+  function buildJobSearchQuery({
     skills = [],
     includeClosed = false,
-  }) {
-    return new Promise((resolve, reject) => {
-      let baseQuery = `
-      SELECT COUNT(DISTINCT j.jobid) AS count
-      FROM jobs j
-      JOIN companies c ON j.companyid = c.idcompanies
-      LEFT JOIN jobs_has_skills js ON j.jobid = js.jobs_jobid
-    `;
-
-      const params = [];
-      const conditions = [];
-
-      // --- Job status condition ---
-      if (includeClosed) {
-        conditions.push(`LOWER(j.jobstatus) IN ('open', 'closed')`);
-      } else {
-        conditions.push(`LOWER(j.jobstatus) = 'open'`);
-      }
-
-      // --- Case-insensitive company name ---
-      if (companyName) {
-        conditions.push(`LOWER(c.companyName) LIKE LOWER(?)`);
-        params.push(`%${companyName}%`);
-      }
-
-      // --- Case-insensitive skill matching ---
-      if (skills && skills.length > 0) {
-        conditions.push(
-          `LOWER(js.skills_skillname) IN (${skills
-            .map(() => "LOWER(?)")
-            .join(",")})`
-        );
-        params.push(...skills);
-      }
-
-      if (conditions.length > 0) {
-        baseQuery += ` WHERE ` + conditions.join(" AND ");
-      }
-
-      pool.query(baseQuery, params, (error, rows) => {
-        if (error) reject("Database error: " + error);
-        else resolve(rows[0].count);
-      });
-    });
-  }
-
-  // --- Helper: Get job list --- // function by chatgpt
-  function getJobsByFilter({
     companyName = null,
-    skills = [],
-    includeClosed = false,
     pageNumber = 1,
-    pageSize = 10,
+    pageSize = 20,
   }) {
-    return new Promise((resolve, reject) => {
-      let baseQuery = `
+    let baseWhere = ` WHERE 1=1 `;
+    const params = [];
+
+    // Job status filter
+    if (!includeClosed) baseWhere += ` AND j.jobstatus = 'open' `;
+    else baseWhere += ` AND j.jobstatus IN ('open','closed') `;
+
+    // Company filter
+    if (companyName) {
+      baseWhere += ` AND LOWER(c.companyName) LIKE ? `;
+      params.push(`%${companyName.toLowerCase()}%`);
+    }
+
+    // Skills filter
+    let skillsFilter = "";
+    if (skills.length > 0) {
+      skillsFilter = `
+        WHERE s.jobs_jobid IN (
+          SELECT inner_s.jobs_jobid
+          FROM jobs_has_skills inner_s
+          WHERE LOWER(inner_s.skills_skillname) IN (${skills.map(() => "?").join(", ")})
+          GROUP BY inner_s.jobs_jobid
+          HAVING COUNT(DISTINCT LOWER(inner_s.skills_skillname)) = ?
+        )
+      `;
+      for (const skill of skills) params.push(skill.toLowerCase());
+      params.push(skills.length);
+    }
+
+    const sql = `
       SELECT 
         j.jobid,
-        c.companyName,
-        j.jobstatus,
+        j.companyid,
         j.jobName,
-        GROUP_CONCAT(DISTINCT js.skills_skillname) AS skills
+        c.companyName,
+        b.skills,
+        j.jobstatus
       FROM jobs j
-      JOIN companies c ON j.companyid = c.idcompanies
-      LEFT JOIN jobs_has_skills js ON j.jobid = js.jobs_jobid
-    `;
-
-      const params = [];
-      const conditions = [];
-
-      // --- Job status condition ---
-      if (includeClosed) {
-        conditions.push(`LOWER(j.jobstatus) IN ('open', 'closed')`);
-      } else {
-        conditions.push(`LOWER(j.jobstatus) = 'open'`);
-      }
-
-      // --- Case-insensitive company name ---
-      if (companyName) {
-        conditions.push(`LOWER(c.companyName) LIKE LOWER(?)`);
-        params.push(`%${companyName}%`);
-      }
-
-      // --- Case-insensitive skill matching ---
-      if (skills && skills.length > 0) {
-        conditions.push(
-          `LOWER(js.skills_skillname) IN (${skills
-            .map(() => "LOWER(?)")
-            .join(",")})`
-        );
-        params.push(...skills);
-      }
-
-      if (conditions.length > 0) {
-        baseQuery += ` WHERE ` + conditions.join(" AND ");
-      }
-
-      baseQuery += `
-      GROUP BY j.jobid
-      ORDER BY j.jobid DESC
+      JOIN (
+          SELECT s.jobs_jobid, GROUP_CONCAT(s.skills_skillname) AS skills
+          FROM jobs_has_skills s
+          ${skillsFilter}
+          GROUP BY s.jobs_jobid
+      ) b ON j.jobid = b.jobs_jobid
+      JOIN companies c ON c.idcompanies = j.companyid
+      ${baseWhere}
       LIMIT ? OFFSET ?
     `;
 
-      const offset = (pageNumber - 1) * pageSize;
-      params.push(pageSize, offset);
+    const countSql = `
+      SELECT COUNT(*) AS total
+      FROM jobs j
+      JOIN (
+          SELECT s.jobs_jobid
+          FROM jobs_has_skills s
+          ${skillsFilter}
+          GROUP BY s.jobs_jobid
+      ) b ON j.jobid = b.jobs_jobid
+      JOIN companies c ON c.idcompanies = j.companyid
+      ${baseWhere}
+    `;
 
-      pool.query(baseQuery, params, (error, rows) => {
-        if (error) reject("Database error: " + error);
-        else {
-          const formatted = rows.map((r) => ({
-            jobId: r.jobid,
-            companyName: r.companyName,
-            jobName: r.jobName,
-            jobStatus: r.jobstatus,
-            skills: r.skills ? r.skills.split(",") : [],
-          }));
-          resolve(formatted);
-        }
+    return {
+      sql,
+      countSql,
+      params,
+      paginationParams: [pageSize, (pageNumber - 1) * pageSize],
+    };
+  }
+
+  // ALL JOBS (no skills, no company)
+  function searchAllJobs({ pageNumber = 1, pageSize = 20, includeClosed = false }) {
+    return new Promise((resolve, reject) => {
+      const offset = (pageNumber - 1) * pageSize;
+
+      const statusFilter = includeClosed
+        ? ` j.jobstatus IN ('open','closed') `
+        : ` j.jobstatus = 'open' `;
+
+      const sql = `
+        SELECT 
+          j.jobid,
+          j.companyid,
+          j.jobName,
+          c.companyName,
+          b.skills,
+          j.jobstatus
+        FROM jobs j
+        LEFT JOIN (
+          SELECT s.jobs_jobid, GROUP_CONCAT(s.skills_skillname) AS skills
+          FROM jobs_has_skills s
+          GROUP BY s.jobs_jobid
+        ) b ON j.jobid = b.jobs_jobid
+        JOIN companies c ON c.idcompanies = j.companyid
+        WHERE ${statusFilter}
+        LIMIT ? OFFSET ?
+      `;
+
+      const countSql = `
+        SELECT COUNT(*) AS total
+        FROM jobs j
+        WHERE ${statusFilter}
+      `;
+
+      pool.query(countSql, [], (err, countRows) => {
+        if (err) return reject(err);
+
+        const totalResultCount = countRows[0].total;
+
+        pool.query(sql, [pageSize, offset], (err2, jobs) => {
+          if (err2) return reject(err2);
+
+          resolve({
+            pageNumber,
+            pageSize,
+            totalResultCount,
+            pageResultCount: jobs.length,
+            jobs,
+          });
+        });
       });
     });
   }
 
-  // --- Combine everything ---
-  let response = {}
-  try {
-    const totalResultCount = await countJobsByFilter({
-      companyName,
-      skills,
-      includeClosed,
-    });
-    const jobs = await getJobsByFilter({
-      companyName,
-      skills,
-      pageNumber,
-      pageSize,
-      includeClosed,
-    });
+  // ALL JOBS FROM ONE COMPANY (no skills + company)
+  function searchAllJobsFromCompany({ pageNumber = 1, pageSize = 20, includeClosed = false, companyName }) {
+    return new Promise((resolve, reject) => {
+      const offset = (pageNumber - 1) * pageSize;
 
-    response =  {
-      statusCode: 200,
-      pageNumber,
-      totalResultCount,
-      pageSize,
-      pageResultCount: jobs.length,
-      jobs,
-    };
-  } catch (err) {
-    response = {
-      statusCode: 400,
-      error: err,
-    };
+      const statusFilter = includeClosed
+        ? ` j.jobstatus IN ('open','closed') `
+        : ` j.jobstatus = 'open' `;
+
+      const sql = `
+        SELECT 
+          j.jobid,
+          j.companyid,
+          j.jobName,
+          c.companyName,
+          b.skills,
+          j.jobstatus
+        FROM jobs j
+        LEFT JOIN (
+          SELECT s.jobs_jobid, GROUP_CONCAT(s.skills_skillname) AS skills
+          FROM jobs_has_skills s
+          GROUP BY s.jobs_jobid
+        ) b ON j.jobid = b.jobs_jobid
+        JOIN companies c ON c.idcompanies = j.companyid
+        WHERE ${statusFilter}
+          AND LOWER(c.companyName) LIKE ?
+        LIMIT ? OFFSET ?
+      `;
+
+      const countSql = `
+        SELECT COUNT(*) AS total
+        FROM jobs j
+        JOIN companies c ON c.idcompanies = j.companyid
+        WHERE ${statusFilter}
+          AND LOWER(c.companyName) LIKE ?
+      `;
+
+      const cnameParam = `%${companyName.toLowerCase()}%`;
+
+      pool.query(countSql, [cnameParam], (err, countRows) => {
+        if (err) return reject(err);
+
+        const totalResultCount = countRows[0].total;
+
+        pool.query(sql, [cnameParam, pageSize, offset], (err2, jobs) => {
+          if (err2) return reject(err2);
+
+          resolve({
+            pageNumber,
+            pageSize,
+            totalResultCount,
+            pageResultCount: jobs.length,
+            jobs,
+          });
+        });
+      });
+    });
   }
+
+  // FILTERED SEARCH (skills always used)
+  function searchJobs(filters) {
+    return new Promise((resolve, reject) => {
+      const { sql, countSql, params, paginationParams } =
+        buildJobSearchQuery(filters);
+
+      pool.query(countSql, params, (err, countRows) => {
+        if (err) return reject(err);
+
+        const totalResultCount = countRows[0].total;
+
+        pool.query(sql, [...params, ...paginationParams], (err2, jobs) => {
+          if (err2) return reject(err2);
+
+          resolve({
+            pageNumber: filters.pageNumber,
+            pageSize: filters.pageSize,
+            totalResultCount,
+            pageResultCount: jobs.length,
+            jobs,
+          });
+        });
+      });
+    });
+  }
+
+
+  // -----------------------------
+  // MAIN LOGIC
+  // -----------------------------
+
+  let response = {};
+  try {
+    const skillsEmpty = !skills || skills.length === 0;
+    const companyEmpty = !companyName || companyName.trim() === "";
+
+    let result;
+
+    if (skillsEmpty && companyEmpty) {
+      // → ALL JOBS
+      result = await searchAllJobs({ pageNumber, pageSize, includeClosed });
+
+    } else if (skillsEmpty && !companyEmpty) {
+      // → ALL JOBS FROM COMPANY
+      result = await searchAllJobsFromCompany({
+        pageNumber,
+        pageSize,
+        includeClosed,
+        companyName,
+      });
+
+    } else {
+      // → SKILL SEARCH (skills with or without company)
+      result = await searchJobs({
+        companyName,
+        skills,
+        pageNumber,
+        pageSize,
+        includeClosed,
+      });
+    }
+    result.jobs.map(x=>{let l = x; if(l.skills==null){l.skills=""}return l})
+    response = {
+      statusCode: 200,
+      ...result,
+    };
+
+  } catch (err) {
+    response = { statusCode: 400, error: err };
+  }
+
   pool.end();
-  return response
+  return response;
 };
 
+
+console.log(await handler({
+    companyName: "n",
+    skills: [],
+    pageNumber: 1,
+    pageSize: 2,
+    includeClosed: true,
+  }))

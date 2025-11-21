@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { updateCookie, useAuth } from "./AuthProvider";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import CountMatchingApplicants from "./countMatchingApplicants";
 
 interface jobItem{
     jobName: string,
@@ -98,8 +99,9 @@ export default function CompanyDashboard() {
 
          {/*
          When viewing job applicants use this  V-- axios instance passsesd in so we don't have 50 of them
-         // return <ApplicantReview instance={instance} jobID={jobid} jobName={jobname} credentails={allCreds}></ApplicantReview> */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+         // return <ApplicantReview instance={instance} jobID={jobid} jobName={jobname} credentails={allCreds}></ApplicantReview>
+        // <CountMatchingApplicants instance={instance}></CountMatchingApplicants>
+         eslint-disable-next-line @next/next/no-img-element */}
         <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
         <label className="error">{err}</label>
         <h3>Inactive Jobs</h3>
