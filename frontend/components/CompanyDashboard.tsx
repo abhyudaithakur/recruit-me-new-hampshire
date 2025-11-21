@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { updateCookie, useAuth } from "./AuthProvider";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import CountMatchingApplicants from "./countMatchingApplicants";
 
 interface jobItem{
     jobName: string,
