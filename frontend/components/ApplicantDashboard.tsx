@@ -149,8 +149,16 @@ export default function ApplicantDashboard({
         );
         const data = await res.json();
         const parsed = parseResponseBody(data);
-        if (parsed && (parsed.status === "success" || parsed.status === "ok")) updateOfferStatus(offerId, endpoint);
-        else alert(parsed?.error ?? "Failed to update offer status");
+        if (parsed) {
+  if (parsed.status === "success" || parsed.status === "ok") {
+    updateOfferStatus(offerId, endpoint);
+  } else if (parsed.offer?.status) {
+    updateOfferStatus(offerId, String(parsed.offer.status).toLowerCase());
+  } else {
+    console.warn("Accept/Reject response unexpected:", parsed);
+    alert(parsed?.error ?? "Failed to update offer status");
+  }
+}
       }
     } catch (err) {
       console.error(err);
