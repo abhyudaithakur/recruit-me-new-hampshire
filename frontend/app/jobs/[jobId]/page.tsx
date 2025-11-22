@@ -40,6 +40,11 @@ export default function JobProfilePage() {
   const [newStatus, setNewStatus] = useState<"Open" | "Closed">("Open");
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  const currentApplicant = applicants.find(
+  (a) => a.idapplicant === Number(userID)
+);
+
+
   const [confirmApplicantAction, setConfirmApplicantAction] = useState<{
   id: number;
   action: "offer" | "reject";
@@ -192,6 +197,46 @@ export default function JobProfilePage() {
 };
 
 
+// Withdraw job application
+const handleWithdraw = async () => {
+  try {
+    const response = await fetch(
+      "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/withdraw",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: Number(jobId),
+          applicantId: Number(userID),
+        }),
+      }
+    );
+
+    const result = await response.json();
+    const parsed = JSON.parse(result.body);
+
+    if (parsed.status === "success") {
+      setHasApplied(false);
+
+      // Update applicants list to "Withdrawn"
+      setApplicants((prev) =>
+        prev.map((app) =>
+          app.idapplicant === Number(userID)
+            ? { ...app, status_statusType: "Withdrawn" }
+            : app
+        )
+      );
+    } else {
+      alert(parsed.error || "Failed to withdraw");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error withdrawing job application");
+  }
+};
+
+
+
   // Apply for job
   const handleApply = async () => {
     try {
@@ -341,17 +386,44 @@ export default function JobProfilePage() {
         </div>
       )}
 
-  {userType === "applicant" && !hasApplied && job.jobstatus === "Open" && (
-  <button
-    onClick={handleApply}
-    className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
-  >
-    Apply for this Job
-  </button>
-)}
+ {userType === "applicant" &&
+  !hasApplied &&
+  !applicants.some(
+    (a) =>
+      a.idapplicant === Number(userID) &&
+      a.status_statusType === "Withdrawn"
+  ) &&
+  job.jobstatus === "Open" && (
+    <button
+      onClick={handleApply}
+      className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
+    >
+      Apply for this Job
+    </button>
+  )}
 
-{userType === "applicant" && hasApplied && (
-  <p className="mt-4 text-blue-700 font-semibold">You have already applied.</p>
+
+{userType === "applicant" &&
+  hasApplied &&
+  currentApplicant?.status_statusType !== "Withdrawn" &&
+  job.jobstatus === "Open" && (
+    <button
+      onClick={handleWithdraw}
+      className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg"
+    >
+      Withdraw Application
+    </button>
+  )}
+
+
+{/* Show final withdrawn text */}
+{userType === "applicant" &&
+  applicants.some(
+    (a) => a.idapplicant === Number(userID) && a.status_statusType === "Withdrawn"
+  ) && (
+    <p className="mt-4 text-gray-600 font-semibold">
+      Application Withdrawn
+    </p>
 )}
 
       <button
