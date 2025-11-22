@@ -19,7 +19,8 @@ interface Applicant {
   idapplicant: number;
   name: string;
   credential: string;
-  status: string;
+  status_statusType: string;
+  offerStatus?: string | null;
 }
 
 export default function JobProfilePage() {
@@ -38,6 +39,12 @@ export default function JobProfilePage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [newStatus, setNewStatus] = useState<"Open" | "Closed">("Open");
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const [confirmApplicantAction, setConfirmApplicantAction] = useState<{
+  id: number;
+  action: "offer" | "reject";
+} | null>(null);
+
 
   // Fetch job details
   useEffect(() => {
@@ -147,44 +154,43 @@ export default function JobProfilePage() {
   };
 
   // Offer / Reject applicant
-  const handleApplicantAction = async (
-    idapplicant: number,
-    action: "offer" | "reject"
-  ) => {
-    try {
-      const response = await fetch(
-        "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/offer_job",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            companyId: Number(userID),
-            jobId: Number(jobId),
-            applicantId: idapplicant,
-            action,
-          }),
-        }
-      );
-
-      const result = await response.json();
-      const parsed = JSON.parse(result.body);
-
-      if (parsed.status === "success") {
-        setApplicants((prev) =>
-          prev.map((app) =>
-            app.idapplicant === idapplicant
-              ? { ...app, status: action === "offer" ? "Offered" : "Rejected" }
-              : app
-          )
-        );
-      } else {
-        alert(parsed.error || "Failed to update applicant status");
+  const handleApplicantAction = async (idapplicant: number, action: "offer" | "reject") => {
+  try {
+    const response = await fetch(
+      "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/offer_job",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyId: Number(userID),
+          jobId: Number(jobId),
+          applicantId: idapplicant,
+          action,
+        }),
       }
-    } catch (err) {
-      console.error("Error updating applicant:", err);
-      alert("Error updating applicant");
+    );
+
+    const result = await response.json();
+    const parsed = JSON.parse(result.body);
+
+    if (parsed.status === "success") {
+      // OPTIMISTIC UI UPDATE
+      setApplicants((prev) =>
+        prev.map((app) =>
+          app.idapplicant === idapplicant
+            ? { ...app, status: action === "offer" ? "Offered" : "Rejected" }
+            : app
+        )
+      );
+    } else {
+      alert(parsed.error || "Failed to update applicant status");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Error updating applicant");
+  }
+};
+
 
   // Apply for job
   const handleApply = async () => {
@@ -213,7 +219,7 @@ export default function JobProfilePage() {
             idapplicant: Number(userID),
             name: "You",
             credential: "N/A",
-            status: "Applied",
+            status_statusType: "Applied",
           },
         ]);
       } else {
@@ -274,43 +280,80 @@ export default function JobProfilePage() {
                 <tr>
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Credential</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Status (Active/Withdrawn)</th>
                   <th className="px-4 py-2">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {applicants.map((applicant) => (
-                  <tr key={applicant.idapplicant}>
-                    <td className="border px-4 py-2">{applicant.name}</td>
-                    <td className="border px-4 py-2">{applicant.credential}</td>
-                    <td className="border px-4 py-2">{applicant.status}</td>
-                    <td className="border px-4 py-2 space-x-2">
-                      <button
-                        className="bg-green-500 text-white px-2 py-1 rounded"
-                        onClick={() =>
-                          handleApplicantAction(applicant.idapplicant, "offer")
-                        }
-                      >
-                        Offer
-                      </button>
-                      <button
-                        className="bg-red-500 text-white px-2 py-1 rounded"
-                        onClick={() =>
-                          handleApplicantAction(applicant.idapplicant, "reject")
-                        }
-                      >
-                        Reject
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+  {applicants.map((applicant) => {
+    const isWithdrawn = applicant.status_statusType === "Withdrawn";
+
+    return (
+      <tr key={applicant.idapplicant}>
+        <td className="border px-4 py-2">{applicant.name}</td>
+        <td className="border px-4 py-2">{applicant.credential}</td>
+        <td className="border px-4 py-2">
+          {applicant.offerStatus ?? applicant.status_statusType}
+        </td>
+        <td className="border px-4 py-2 space-x-2">
+          {applicant.offerStatus ? (
+            <span className="font-semibold text-blue-700">
+              {applicant.offerStatus}
+            </span>
+          ) : isWithdrawn ? (
+            <span className="font-semibold text-gray-500">Withdrawn</span>
+          ) : (
+            <>
+              <button
+                className="bg-green-500 text-white px-2 py-1 rounded"
+                onClick={() =>
+                  setConfirmApplicantAction({
+                    id: applicant.idapplicant,
+                    action: "offer",
+                  })
+                }
+              >
+                Offer
+              </button>
+              <button
+                className="bg-red-500 text-white px-2 py-1 rounded"
+                onClick={() =>
+                  setConfirmApplicantAction({
+                    id: applicant.idapplicant,
+                    action: "reject",
+                  })
+                }
+              >
+                Reject
+              </button>
+            </>
+          )}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
+
             </table>
           ) : (
             <p className="mt-2 text-gray-600">No applicants yet.</p>
           )}
         </div>
       )}
+
+  {userType === "applicant" && !hasApplied && job.jobstatus === "Open" && (
+  <button
+    onClick={handleApply}
+    className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
+  >
+    Apply for this Job
+  </button>
+)}
+
+{userType === "applicant" && hasApplied && (
+  <p className="mt-4 text-blue-700 font-semibold">You have already applied.</p>
+)}
 
       <button
         onClick={() => router.push("/jobs")}
@@ -327,6 +370,32 @@ export default function JobProfilePage() {
           onCancel={() => setShowConfirm(false)}
         />
       )}
+
+
+{confirmApplicantAction && (
+  <ConfirmModal
+    message={`Are you sure you want to ${confirmApplicantAction.action} this applicant?`}
+    onConfirm={async () => {
+      await handleApplicantAction(
+        confirmApplicantAction.id,
+        confirmApplicantAction.action
+      );
+      setConfirmApplicantAction(null);
+
+      // Update applicant in state to show status
+      setApplicants((prev) =>
+        prev.map((app) =>
+          app.idapplicant === confirmApplicantAction.id
+            ? { ...app, offerStatus: confirmApplicantAction.action === "offer" ? "Offered" : "Rejected" }
+            : app
+        )
+      );
+    }}
+    onCancel={() => setConfirmApplicantAction(null)}
+  />
+)}
+
+
     </div>
   );
 }
