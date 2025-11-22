@@ -279,7 +279,6 @@ export default function JobProfilePage() {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Credential</th>
                   <th className="px-4 py-2">Status (Active/Withdrawn)</th>
                   <th className="px-4 py-2">Action</th>
                 </tr>
@@ -291,7 +290,7 @@ export default function JobProfilePage() {
     return (
       <tr key={applicant.idapplicant}>
         <td className="border px-4 py-2">{applicant.name}</td>
-        <td className="border px-4 py-2">{applicant.credential}</td>
+       
         <td className="border px-4 py-2">
           {applicant.offerStatus ?? applicant.status_statusType}
         </td>
