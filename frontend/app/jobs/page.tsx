@@ -108,7 +108,7 @@ export default function JobsPage() {
           <option value="All">All Status</option>
           <option value="Open">Open</option>
           <option value="Closed">Closed</option>
-          <option value="Review">Review</option>
+          <option value="Draft">Draft</option>
         </select>
       </div>
 
