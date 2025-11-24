@@ -40,6 +40,8 @@ export const handler = async (event) => {
     const result = await checkLogin(event.username, event.password, event.userType)
     
     if(result.credential.length != 0){
+      console.log(below)
+      console.log(result.credential[0].credential)
       response = {
         statusCode: 200,
         credential: result.credential[0].credential,

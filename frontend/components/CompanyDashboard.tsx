@@ -8,7 +8,8 @@ import axios from "axios";
 interface jobItem{
     jobName: string,
     numApplicants: number,
-    numHired: number
+    numHired: number,
+    jobid: number
 }
 
 const instance = axios.create({
@@ -102,6 +103,14 @@ export default function CompanyDashboard() {
         // <CountMatchingApplicants instance={instance}></CountMatchingApplicants>
          eslint-disable-next-line @next/next/no-img-element */}
         <img src='/loading-7528_128.gif' alt="" id='loading' style={load}/>
+
+<button
+        onClick={() => router.push("/jobs")}
+        className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+      >
+        Jobs
+      </button>
+
         <label className="error">{err}</label>
         <h3>Inactive Jobs</h3>
         <table>
@@ -135,7 +144,7 @@ export default function CompanyDashboard() {
                         <td>{item.jobName}</td>
                         <td>{item.numApplicants}</td>
                         <td><button>close</button></td>
-                        <td><button>review</button></td>
+                        <td><ApplicantReview jobID={item.jobid} jobName={item.jobName} instance={instance} credentails={allCreds}/></td>
                     </tr>
                 ))}
             </tbody>

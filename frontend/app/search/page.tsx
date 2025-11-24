@@ -2,12 +2,16 @@
 "use client";
 import axios from "axios";
 import { FormEvent, useState } from "react";
+import ApplyWithdrawButtons from "./ApplyWithdrawButtons";
 
 interface jobDescription {
   jobName: string;
   companyName: string;
   jobStatus: "Open" | "Closed";
   skills: string[];
+  id?: string | number;
+  job_id?: string | number;
+  jobId?: string | number;
 }
 
 const instance = axios.create({
@@ -121,6 +125,7 @@ export default function search() {
               <th>Company</th>
               <th>Job</th>
               <th>Skills</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -131,10 +136,14 @@ export default function search() {
                   <td>{x.jobName}</td>
                   <td>
                     <p>
-                      {x.skills.reduce((x, c, id) => {
+                      {x.skills}
+                      {/* {x.skills.reduce((x, c, id) => {
                         return id == 0 ? c : x + ", " + c;
-                      }, "")}
+                      }, "")} */}
                     </p>
+                  </td>
+                  <td>
+                    <ApplyWithdrawButtons jobId={x.jobId ?? x.job_id ?? x.id ?? x.jobName} />
                   </td>
                 </tr>
               );
@@ -142,7 +151,7 @@ export default function search() {
           </tbody>
           <tfoot>
             <tr>
-              <th colSpan={3}>
+              <th colSpan={4}>
                 <div
                   style={{
                     display: "grid",
