@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
 import ConfirmModal from "@/components/ConfimModel";
@@ -23,8 +23,11 @@ interface Applicant {
   offerStatus?: string | null;
 }
 
-export default function JobProfilePage() {
-  const { jobId } = useParams();
+export default function JobViewPage() {
+  const searchParams = useSearchParams();
+  const jobIdParam = searchParams.get("jobId");
+  const jobId = jobIdParam ? Number(jobIdParam) : null;
+
   const { userType, userID } = useAuth();
   const router = useRouter();
 
@@ -35,27 +38,28 @@ export default function JobProfilePage() {
   const [error, setError] = useState("");
   const [hasApplied, setHasApplied] = useState(false);
 
-  // NEW STATE FOR CONFIRM MODAL
+  // CONFIRM MODAL STATES
   const [showConfirm, setShowConfirm] = useState(false);
   const [newStatus, setNewStatus] = useState<"Open" | "Closed">("Open");
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const currentApplicant = applicants.find(
-  (a) => a.idapplicant === Number(userID)
-);
-
+    (a) => a.idapplicant === Number(userID)
+  );
 
   const [confirmApplicantAction, setConfirmApplicantAction] = useState<{
-  id: number;
-  action: "offer" | "reject";
-} | null>(null);
+    id: number;
+    action: "offer" | "reject";
+  } | null>(null);
 
+  if (!jobId) return <p className="p-6 text-red-600">Job ID not provided.</p>;
 
+  // -----------------------------
   // Fetch job details
+  // -----------------------------
   useEffect(() => {
+    if (!jobId) return;
     const fetchJob = async () => {
-      if (!jobId) return;
-
       try {
         const response = await fetch(
           "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/job_details",
@@ -63,7 +67,7 @@ export default function JobProfilePage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              jobId: Number(jobId),
+              jobId: jobId,
               userId: Number(userID),
             }),
           }
@@ -89,18 +93,19 @@ export default function JobProfilePage() {
     fetchJob();
   }, [jobId, userID, userType]);
 
+  // -----------------------------
   // Fetch applicants
+  // -----------------------------
   useEffect(() => {
+    if (!jobId) return;
     const fetchApplicants = async () => {
-      if (!jobId) return;
-
       try {
         const response = await fetch(
           "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/fetch_job_applicants",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jobId: Number(jobId), userId: Number(userID) }),
+            body: JSON.stringify({ jobId, userId: Number(userID) }),
           }
         );
 
@@ -122,7 +127,9 @@ export default function JobProfilePage() {
     fetchApplicants();
   }, [jobId, userID]);
 
+  // -----------------------------
   // Update job status
+  // -----------------------------
   const handleUpdateJobStatus = async () => {
     try {
       setUpdatingStatus(true);
@@ -133,7 +140,7 @@ export default function JobProfilePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            jobId: Number(jobId),
+            jobId,
             companyId: Number(userID),
             status: newStatus,
           }),
@@ -158,7 +165,9 @@ export default function JobProfilePage() {
     }
   };
 
+  // -----------------------------
   // Offer / Reject applicant
+  // -----------------------------
   const handleApplicantAction = async (idapplicant: number, action: "offer" | "reject") => {
   try {
     const response = await fetch(
@@ -179,11 +188,11 @@ export default function JobProfilePage() {
     const parsed = JSON.parse(result.body);
 
     if (parsed.status === "success") {
-      // OPTIMISTIC UI UPDATE
+      // ✅ Update offerStatus immediately
       setApplicants((prev) =>
         prev.map((app) =>
           app.idapplicant === idapplicant
-            ? { ...app, status: action === "offer" ? "Offered" : "Rejected" }
+            ? { ...app, offerStatus: action === "offer" ? "Offered" : "Rejected" }
             : app
         )
       );
@@ -193,51 +202,53 @@ export default function JobProfilePage() {
   } catch (err) {
     console.error(err);
     alert("Error updating applicant");
+  } finally {
+    setConfirmApplicantAction(null);
   }
 };
 
 
-// Withdraw job application
-const handleWithdraw = async () => {
-  try {
-    const response = await fetch(
-      "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/withdraw",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobId: Number(jobId),
-          applicantId: Number(userID),
-        }),
-      }
-    );
-
-    const result = await response.json();
-    const parsed = JSON.parse(result.body);
-
-    if (parsed.status === "success") {
-      setHasApplied(false);
-
-      // Update applicants list to "Withdrawn"
-      setApplicants((prev) =>
-        prev.map((app) =>
-          app.idapplicant === Number(userID)
-            ? { ...app, status_statusType: "Withdrawn" }
-            : app
-        )
+  // -----------------------------
+  // Withdraw application
+  // -----------------------------
+  const handleWithdraw = async () => {
+    try {
+      const response = await fetch(
+        "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/withdraw",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId,
+            applicantId: Number(userID),
+          }),
+        }
       );
-    } else {
-      alert(parsed.error || "Failed to withdraw");
+
+      const result = await response.json();
+      const parsed = JSON.parse(result.body);
+
+      if (parsed.status === "success") {
+        setHasApplied(false);
+        setApplicants((prev) =>
+          prev.map((app) =>
+            app.idapplicant === Number(userID)
+              ? { ...app, status_statusType: "Withdrawn" }
+              : app
+          )
+        );
+      } else {
+        alert(parsed.error || "Failed to withdraw");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error withdrawing job application");
     }
-  } catch (err) {
-    console.error(err);
-    alert("Error withdrawing job application");
-  }
-};
+  };
 
-
-
+  // -----------------------------
   // Apply for job
+  // -----------------------------
   const handleApply = async () => {
     try {
       const response = await fetch(
@@ -246,7 +257,7 @@ const handleWithdraw = async () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            jobId: Number(jobId),
+            jobId,
             applicantId: Number(userID),
           }),
         }
@@ -276,7 +287,7 @@ const handleWithdraw = async () => {
     }
   };
 
-  if (loadingJob) return <p className="p-6 animate-pulse">Loading job...</p>;
+  if (loadingJob) return <p className="p-6 animate-pulse">Loading ..</p>;
   if (error) return <p className="p-6 text-red-600">{error}</p>;
   if (!job) return <p className="p-6">Job not found.</p>;
 
@@ -314,7 +325,7 @@ const handleWithdraw = async () => {
         </div>
       )}
 
-      {/* Applicants */}
+      {/* Applicants Table */}
       {userType === "company" && (
         <div className="mt-6">
           <strong>Applicants:</strong>
@@ -330,56 +341,55 @@ const handleWithdraw = async () => {
                 </tr>
               </thead>
               <tbody>
-  {applicants.map((applicant) => {
-    const isWithdrawn = applicant.status_statusType === "Withdrawn";
+                {applicants.map((applicant) => {
+                  const isWithdrawn = applicant.status_statusType === "Withdrawn";
 
-    return (
-      <tr key={applicant.idapplicant}>
-        <td className="border px-4 py-2">{applicant.name}</td>
-       
-        <td className="border px-4 py-2">
-          {applicant.offerStatus ?? applicant.status_statusType}
-        </td>
-        <td className="border px-4 py-2 space-x-2">
-          {applicant.offerStatus ? (
-            <span className="font-semibold text-blue-700">
-              {applicant.offerStatus}
-            </span>
-          ) : isWithdrawn ? (
-            <span className="font-semibold text-gray-500">Withdrawn</span>
-          ) : (
-            <>
-              <button
-                className="bg-green-500 text-white px-2 py-1 rounded"
-                onClick={() =>
-                  setConfirmApplicantAction({
-                    id: applicant.idapplicant,
-                    action: "offer",
-                  })
-                }
-              >
-                Offer
-              </button>
-              <button
-                className="bg-red-500 text-white px-2 py-1 rounded"
-                onClick={() =>
-                  setConfirmApplicantAction({
-                    id: applicant.idapplicant,
-                    action: "reject",
-                  })
-                }
-              >
-                Reject
-              </button>
-            </>
-          )}
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
-
-
+                  return (
+                    <tr key={applicant.idapplicant}>
+                      <td className="border px-4 py-2">{applicant.name}</td>
+                      <td className="border px-4 py-2">
+                        {applicant.offerStatus ?? applicant.status_statusType}
+                      </td>
+                      <td className="border px-4 py-2 space-x-2">
+                        {applicant.offerStatus ? (
+                          <span className="font-semibold text-blue-700">
+                            {applicant.offerStatus}
+                          </span>
+                        ) : isWithdrawn ? (
+                          <span className="font-semibold text-gray-500">
+                            Withdrawn
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              className="bg-green-500 text-white px-2 py-1 rounded"
+                              onClick={() =>
+                                setConfirmApplicantAction({
+                                  id: applicant.idapplicant,
+                                  action: "offer",
+                                })
+                              }
+                            >
+                              Offer
+                            </button>
+                            <button
+                              className="bg-red-500 text-white px-2 py-1 rounded"
+                              onClick={() =>
+                                setConfirmApplicantAction({
+                                  id: applicant.idapplicant,
+                                  action: "reject",
+                                })
+                              }
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
             </table>
           ) : (
             <p className="mt-2 text-gray-600">No applicants yet.</p>
@@ -387,45 +397,45 @@ const handleWithdraw = async () => {
         </div>
       )}
 
- {userType === "applicant" &&
-  !hasApplied &&
-  !applicants.some(
-    (a) =>
-      a.idapplicant === Number(userID) &&
-      a.status_statusType === "Withdrawn"
-  ) &&
-  job.jobstatus === "Open" && (
-    <button
-      onClick={handleApply}
-      className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
-    >
-      Apply for this Job
-    </button>
-  )}
+      {/* Applicant Actions */}
+      {userType === "applicant" &&
+        !hasApplied &&
+        !applicants.some(
+          (a) =>
+            a.idapplicant === Number(userID) &&
+            a.status_statusType === "Withdrawn"
+        ) &&
+        job.jobstatus === "Open" && (
+          <button
+            onClick={handleApply}
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
+          >
+            Apply for this Job
+          </button>
+        )}
 
+      {userType === "applicant" &&
+        hasApplied &&
+        currentApplicant?.status_statusType !== "Withdrawn" &&
+        job.jobstatus === "Open" && (
+          <button
+            onClick={handleWithdraw}
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg"
+          >
+            Withdraw Application
+          </button>
+        )}
 
-{userType === "applicant" &&
-  hasApplied &&
-  currentApplicant?.status_statusType !== "Withdrawn" &&
-  job.jobstatus === "Open" && (
-    <button
-      onClick={handleWithdraw}
-      className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg"
-    >
-      Withdraw Application
-    </button>
-  )}
-
-
-{/* Show final withdrawn text */}
-{userType === "applicant" &&
-  applicants.some(
-    (a) => a.idapplicant === Number(userID) && a.status_statusType === "Withdrawn"
-  ) && (
-    <p className="mt-4 text-gray-600 font-semibold">
-      Application Withdrawn
-    </p>
-)}
+      {userType === "applicant" &&
+        applicants.some(
+          (a) =>
+            a.idapplicant === Number(userID) &&
+            a.status_statusType === "Withdrawn"
+        ) && (
+          <p className="mt-4 text-gray-600 font-semibold">
+            Application Withdrawn
+          </p>
+        )}
 
       <button
         onClick={() => router.push("/jobs")}
@@ -434,40 +444,28 @@ const handleWithdraw = async () => {
         Back to Jobs
       </button>
 
-      {/* CONFIRM MODAL */}
-      {showConfirm && (
-        <ConfirmModal
-          message={`Are you sure you want to change status to ${newStatus}?`}
-          onConfirm={handleUpdateJobStatus}
-          onCancel={() => setShowConfirm(false)}
-        />
-      )}
-
-
-{confirmApplicantAction && (
+      {confirmApplicantAction && (
   <ConfirmModal
     message={`Are you sure you want to ${confirmApplicantAction.action} this applicant?`}
-    onConfirm={async () => {
-      await handleApplicantAction(
-        confirmApplicantAction.id,
-        confirmApplicantAction.action
-      );
-      setConfirmApplicantAction(null);
-
-      // Update applicant in state to show status
-      setApplicants((prev) =>
-        prev.map((app) =>
-          app.idapplicant === confirmApplicantAction.id
-            ? { ...app, offerStatus: confirmApplicantAction.action === "offer" ? "Offered" : "Rejected" }
-            : app
-        )
-      );
-    }}
+    onConfirm={() => handleApplicantAction(confirmApplicantAction.id, confirmApplicantAction.action)}
     onCancel={() => setConfirmApplicantAction(null)}
   />
 )}
 
 
+      {confirmApplicantAction && (
+        <ConfirmModal
+          message={`Are you sure you want to ${confirmApplicantAction.action} this applicant?`}
+          onConfirm={async () => {
+            await handleApplicantAction(
+              confirmApplicantAction.id,
+              confirmApplicantAction.action
+            );
+            setConfirmApplicantAction(null);
+          }}
+          onCancel={() => setConfirmApplicantAction(null)}
+        />
+      )}
     </div>
   );
 }

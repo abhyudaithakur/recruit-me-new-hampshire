@@ -1,77 +1,82 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/AuthProvider"   // ✅ IMPORT AUTH
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+
+interface FormData {
+  title: string;
+  description: string;
+  skills: string;
+}
 
 export default function CreateJobPage() {
-  const router = useRouter()
-  const { userID } = useAuth()   // ✅ GET LOGGED-IN USER ID (companyId)
-  
-  const [formData, setFormData] = useState({
+  const router = useRouter();
+  const { userID } = useAuth();
+
+  const [formData, setFormData] = useState<FormData>({
     title: "",
     description: "",
     skills: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
 
-  const companyId = Number(userID)   // ✅ COMPANY ID FROM AUTH
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    if (!userID) return alert("User not authenticated");
+
+    setIsSubmitting(true);
 
     try {
-      console.log(userID,"new")
+      const payload = {
+        companyId: Number(userID),
+        jobName: formData.title,
+        jobStatus: "Open",
+        description: formData.description,
+        skills: formData.skills.split(",").map((s) => s.trim()),
+      };
+
       const response = await fetch(
         "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/create_job",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            body: JSON.stringify({
-              companyId,   // ✅ DYNAMIC USER ID
-              jobName: formData.title,
-              jobStatus: "Open",
-              description: formData.description,
-              skills: formData.skills.split(",").map((s) => s.trim())
-            }),
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: JSON.stringify(payload) }),
         }
-      )
+      );
 
-      const result = await response.json()
-      const parsedResult = JSON.parse(result.body)
+      const result = await response.json();
+      const parsedResult = JSON.parse(result.body);
 
       if (response.ok) {
-        console.log("Job created successfully:", parsedResult)
-        router.push("/jobs")
+        console.log("Job created:", parsedResult);
+        router.push("/jobs");
       } else {
-        console.error("Failed to create job:", parsedResult)
-        alert(parsedResult.error || "Failed to create job")
+        console.error("Failed to create job:", parsedResult);
+        alert(parsedResult.error || "Failed to create job");
       }
-    } catch (error) {
-      console.error("Error creating job:", error)
-      alert("Error creating job")
+    } catch (err) {
+      console.error("Error creating job:", err);
+      alert("Error creating job");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-50 px-6">
       <div className="bg-white p-10 rounded-xl shadow-lg w-full max-w-2xl">
-        <h1 className="text-3xl font-bold text-blue-700 mb-6 text-center">Create New Job</h1>
+        <h1 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+          Create New Job
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-
           <div>
             <label className="block text-gray-700 font-semibold mb-1">Job Title</label>
             <input
@@ -96,7 +101,9 @@ export default function CreateJobPage() {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-semibold mb-1">Required Skills (comma separated)</label>
+            <label className="block text-gray-700 font-semibold mb-1">
+              Required Skills (comma separated)
+            </label>
             <input
               type="text"
               name="skills"
@@ -111,7 +118,7 @@ export default function CreateJobPage() {
             type="submit"
             disabled={isSubmitting}
             className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition ${
-              isSubmitting && "opacity-70 cursor-not-allowed"
+              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
             }`}
           >
             {isSubmitting ? "Creating..." : "Create Job"}
@@ -119,5 +126,5 @@ export default function CreateJobPage() {
         </form>
       </div>
     </div>
-  )
+  );
 }
