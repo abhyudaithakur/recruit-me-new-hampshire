@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { SkillList } from "@/components/SkillList";
 import axios from "axios";
 import ConfirmModal from "./ConfimModel";
+import Image from "next/image";
 
 const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_STAGE,
@@ -17,6 +18,15 @@ type Offer = {
   companyid: string;
   status: string; // 'offered' | 'accepted' | 'rejected' | 'rescinded'
 };
+
+interface RawOffer {
+  offer_id?: number | string;
+  jobName?: string;
+  job_name?: string;
+  companyid?: string | number;
+  company_id?: string | number;
+  status?: string;
+}
 
 export default function ApplicantDashboard({
   credentials,
@@ -39,16 +49,33 @@ export default function ApplicantDashboard({
   const [edit, setEdit] = useState(false);
 
   // Helper to parse API responses
-  const parseResponseBody = (apiResponse) => {
-    if (!apiResponse) return [];
-    if (typeof apiResponse === "string") {
-      try { return JSON.parse(apiResponse); } catch { return []; }
+  const parseResponseBody = (apiResponse: unknown) => {
+  if (!apiResponse) return [];
+  
+  if (typeof apiResponse === "string") {
+    try {
+      return JSON.parse(apiResponse);
+    } catch {
+      return [];
     }
-    if (apiResponse.body && typeof apiResponse.body === "string") {
-      try { return JSON.parse(apiResponse.body); } catch { return []; }
+  }
+
+  if (typeof apiResponse === "object" && apiResponse !== null) {
+    const body = (apiResponse as { body?: string }).body;
+    if (typeof body === "string") {
+      try {
+        return JSON.parse(body);
+      } catch {
+        return [];
+      }
     }
     return apiResponse;
-  };
+  }
+
+  return [];
+};
+
+
 
   // Fetch skills and offers
   useEffect(() => {
@@ -85,12 +112,12 @@ export default function ApplicantDashboard({
           );
           const data = await res.json();
           const parsed = parseResponseBody(data);
-          const normalized: Offer[] = (parsed || []).map((o) => ({
-            offer_id: Number(o.offer_id),
-            jobName: String(o.jobName ?? o.job_name ?? ""),
-            companyid: String(o.companyid ?? o.company_id ?? ""),
-            status: String(o.status ?? "").toLowerCase(),
-          }));
+          const normalized: Offer[] = (parsed as RawOffer[] || []).map((o) => ({
+  offer_id: Number(o.offer_id),
+  jobName: o.jobName ?? o.job_name ?? "",
+  companyid: String(o.companyid ?? o.company_id ?? ""),
+  status: (o.status ?? "").toLowerCase(),
+}));
           setOffers(normalized);
         } catch (err) {
           console.error("Error fetching offers:", err);
@@ -210,9 +237,17 @@ export default function ApplicantDashboard({
         </>
       )}
 
+      {err && (
+  <div className="text-red-600 mb-4">
+    {err}
+  </div>
+)}
+
       <SkillList skills={skills} setSkills={setSkills} />
       <button type="submit" onClick={sendSkillChanges}>Submit Changes</button>
-      <img src="/loading-7528_128.gif" alt="" id="loading" style={load} />
+      <div style={load}>
+  <Image src="/loading-7528_128.gif" alt="Loading" width={128} height={128} />
+</div>
 
       <div style={{ display: "flex", gap: 30, padding: 20 }}>
         {/* Offered Jobs */}
