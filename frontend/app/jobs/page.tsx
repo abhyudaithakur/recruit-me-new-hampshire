@@ -15,10 +15,6 @@ export default function JobsPage() {
   const PAGE_SIZE = 5;
   const router = useRouter();
 
-  interface body{
-    companyId: number
-  }
-
   interface j{
     title: string,
     jobId: number,
@@ -26,15 +22,27 @@ export default function JobsPage() {
     status: string
   }
 
+  interface FetchJobsBody {
+  companyId?: number;
+  status?: string;
+}
+
+const body: FetchJobsBody = {};
+if (userType === "company") {
+  body.companyId = Number(userID);
+}
+
+
+useEffect(() => {
+  if (!userID) return; // Don't run if userID is not ready
+
   const fetchJobs = async () => {
     try {
-      const body = {} as body;
+      const body: FetchJobsBody = {};
+if (userType === "company") {
+  body.companyId = Number(userID);
+}
 
-    // Company should only see their jobs
-    if (userType === "company") {
-      body.companyId = Number(userID);
-    }
-      
       const response = await fetch(
         "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/Fetch_jobs",
         {
@@ -52,9 +60,9 @@ export default function JobsPage() {
     }
   };
 
-  useEffect(() => {
-    if (userID) fetchJobs();
-  }, [userID]);
+  fetchJobs();
+}, [userID, userType]);
+
 
   /** -----------------------------
    *  Filtering Logic
