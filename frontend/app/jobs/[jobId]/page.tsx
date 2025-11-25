@@ -305,6 +305,7 @@ const handleWithdraw = async () => {
               setShowConfirm(true);
             }}
             className="border px-3 py-2 rounded"
+            disabled={updatingStatus}
           >
             <option value="Open">Open</option>
             <option value="Draft">Draft</option>

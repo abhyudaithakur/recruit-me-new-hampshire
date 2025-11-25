@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
 interface job{
@@ -14,7 +14,6 @@ interface job{
 export default function ApplyJobPage() {
   const { jobId } = useParams();
   const { userID, userType } = useAuth();
-  const router = useRouter();
 
   const [job, setJob] = useState({} as job);
   const [loading, setLoading] = useState(true);
