@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { SkillList } from "@/components/SkillList";
 import axios from "axios";
 import ConfirmModal from "./ConfimModel";
-import Image from "next/image";
 
 const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_STAGE,
@@ -245,9 +244,6 @@ export default function ApplicantDashboard({
 
       <SkillList skills={skills} setSkills={setSkills} />
       <button type="submit" onClick={sendSkillChanges}>Submit Changes</button>
-      <div style={load}>
-  <Image src="/loading-7528_128.gif" alt="Loading" width={128} height={128} />
-</div>
 
       <div style={{ display: "flex", gap: 30, padding: 20 }}>
         {/* Offered Jobs */}
