@@ -39,7 +39,7 @@ export default function ApplicantDashboard({
   const [edit, setEdit] = useState(false);
 
   // Helper to parse API responses
-  const parseResponseBody = (apiResponse: any) => {
+  const parseResponseBody = (apiResponse) => {
     if (!apiResponse) return [];
     if (typeof apiResponse === "string") {
       try { return JSON.parse(apiResponse); } catch { return []; }
@@ -85,7 +85,7 @@ export default function ApplicantDashboard({
           );
           const data = await res.json();
           const parsed = parseResponseBody(data);
-          const normalized: Offer[] = (parsed || []).map((o: any) => ({
+          const normalized: Offer[] = (parsed || []).map((o) => ({
             offer_id: Number(o.offer_id),
             jobName: String(o.jobName ?? o.job_name ?? ""),
             companyid: String(o.companyid ?? o.company_id ?? ""),

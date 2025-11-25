@@ -4,12 +4,19 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
+interface job{
+  jobName: string,
+  jobstatus: string,
+  companyid: number,
+  skills: []
+}
+
 export default function ApplyJobPage() {
   const { jobId } = useParams();
   const { userID, userType } = useAuth();
   const router = useRouter();
 
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState({} as job);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasApplied, setHasApplied] = useState(false);
@@ -37,7 +44,7 @@ export default function ApplyJobPage() {
           // Check if applicant has already applied
           if (userType === "applicant" && parsed.job.applicants) {
             const applied = parsed.job.applicants.some(
-              (app: any) => app.idapplicant === userID
+              (app: { idapplicant: string; }) => app.idapplicant === userID
             );
             setHasApplied(applied);
           }

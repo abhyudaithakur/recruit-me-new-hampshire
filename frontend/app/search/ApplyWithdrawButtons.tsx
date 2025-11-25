@@ -50,7 +50,7 @@ export default function ApplyWithdrawButtons({ jobId }: Props) {
         const m = (data as ErrorEnvelope)?.error?.message ?? `HTTP ${res.status}`;
         setMsg(`Error: ${m}`);
       }
-    } catch (e: any) {
+    } catch (e) {
       setMsg(`Error: ${String(e)}`);
     } finally {
       setBusy(null);

@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 export default function JobsPage() {
   const { userID,userType } = useAuth();
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState([]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -15,9 +15,20 @@ export default function JobsPage() {
   const PAGE_SIZE = 5;
   const router = useRouter();
 
+  interface body{
+    companyId: number
+  }
+
+  interface j{
+    title: string,
+    jobId: number,
+    description: string,
+    status: string
+  }
+
   const fetchJobs = async () => {
     try {
-      const body: any = {};
+      const body = {} as body;
 
     // Company should only see their jobs
     if (userType === "company") {
@@ -50,8 +61,8 @@ export default function JobsPage() {
    ----------------------------- */
   const filteredJobs = useMemo(() => {
     return jobs
-      .filter((j) => j.title.toLowerCase().includes(search.toLowerCase()))
-      .filter((j) => (statusFilter === "All" ? true : j.status === statusFilter));
+      .filter((j: j) => j.title.toLowerCase().includes(search.toLowerCase()))
+      .filter((j: j) => (statusFilter === "All" ? true : j.status === statusFilter));
   }, [jobs, search, statusFilter]);
 
   /** -----------------------------
@@ -133,7 +144,7 @@ export default function JobsPage() {
           </td>
         </tr>
       ) : (
-        paginatedJobs.map((job) => (
+        paginatedJobs.map((job: j) => (
           <tr key={job.jobId}>
             <td className="p-3 border border-black">{job.title}</td>
             <td className="p-3 border border-black text-sm">{job.description}</td>
