@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-
 import ConfirmModal from "@/components/ConfimModel";
 
 interface Job {
@@ -23,6 +22,8 @@ interface Applicant {
   offerStatus?: string | null;
 }
 
+
+
 export default function JobViewPage() {
   const searchParams = useSearchParams();
   const jobIdParam = searchParams.get("jobId");
@@ -34,29 +35,36 @@ export default function JobViewPage() {
   const [job, setJob] = useState<Job | null>(null);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loadingJob, setLoadingJob] = useState(true);
-  const [loadingApplicants, setLoadingApplicants] = useState(true);
-  const [error, setError] = useState("");
-  const [hasApplied, setHasApplied] = useState(false);
 
-  // CONFIRM MODAL STATES
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [newStatus, setNewStatus] = useState<"Open" | "Closed">("Open");
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+  useEffect(() => {
+    if (!jobId) return;
+    const fetchApplicants = async () => {
+      try {
+        const response = await fetch(
+          "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/fetch_job_applicants",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jobId, userId: Number(userID) }),
+          }
+        );
+        const result = await response.json();
+        const parsed = JSON.parse(result.body);
 
-  const currentApplicant = applicants.find(
-    (a) => a.idapplicant === Number(userID)
-  );
+        if (response.ok) {
+          setApplicants(parsed.applicants || []);
+        } else {
+          console.error(parsed.error || "Failed to fetch applicants");
+        }
+      } catch (err) {
+        console.error("Error fetching applicants:", err);
+      } finally {
+        setLoadingApplicants(false);
+      }
+    };
+    fetchApplicants();
+  }, [jobId, userID]);
 
-  const [confirmApplicantAction, setConfirmApplicantAction] = useState<{
-    id: number;
-    action: "offer" | "reject";
-  } | null>(null);
-
-  if (!jobId) return <p className="p-6 text-red-600">Job ID not provided.</p>;
-
-  // -----------------------------
-  // Fetch job details
-  // -----------------------------
   useEffect(() => {
     if (!jobId) return;
     const fetchJob = async () => {
@@ -66,13 +74,9 @@ export default function JobViewPage() {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jobId: jobId,
-              userId: Number(userID),
-            }),
+            body: JSON.stringify({ jobId, userId: Number(userID) }),
           }
         );
-
         const result = await response.json();
         const parsed = JSON.parse(result.body);
 
@@ -89,51 +93,47 @@ export default function JobViewPage() {
         setLoadingJob(false);
       }
     };
-
     fetchJob();
   }, [jobId, userID, userType]);
+
+
+
+  const [loadingApplicants, setLoadingApplicants] = useState(true);
+  const [error, setError] = useState("");
+  const [hasApplied, setHasApplied] = useState(false);
+
+  // Job status modal
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [newStatus, setNewStatus] = useState<"Open" | "Closed">("Open");
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Applicant action modal
+  const [confirmApplicantAction, setConfirmApplicantAction] = useState<{
+    id: number;
+    action: "offer" | "reject";
+  } | null>(null);
+
+  const currentApplicant = applicants.find(
+    (a) => a.idapplicant === Number(userID)
+  );
+
+  if (!jobId) return <p className="p-6 text-red-600">Job ID not provided.</p>;
+
+  // -----------------------------
+  // Fetch job details
+  // -----------------------------
+  
 
   // -----------------------------
   // Fetch applicants
   // -----------------------------
-  useEffect(() => {
-    if (!jobId) return;
-    const fetchApplicants = async () => {
-      try {
-        const response = await fetch(
-          "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/fetch_job_applicants",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jobId, userId: Number(userID) }),
-          }
-        );
-
-        const result = await response.json();
-        const parsed = JSON.parse(result.body);
-
-        if (response.ok) {
-          setApplicants(parsed.applicants || []);
-        } else {
-          console.error(parsed.error || "Failed to fetch applicants");
-        }
-      } catch (err) {
-        console.error("Error fetching applicants:", err);
-      } finally {
-        setLoadingApplicants(false);
-      }
-    };
-
-    fetchApplicants();
-  }, [jobId, userID]);
-
+  
   // -----------------------------
   // Update job status
   // -----------------------------
   const handleUpdateJobStatus = async () => {
     try {
       setUpdatingStatus(true);
-
       const response = await fetch(
         "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/update_job_status",
         {
@@ -146,7 +146,6 @@ export default function JobViewPage() {
           }),
         }
       );
-
       const result = await response.json();
       const parsed = JSON.parse(result.body);
 
@@ -157,7 +156,7 @@ export default function JobViewPage() {
         alert(parsed.error || "Failed to update job status");
       }
     } catch (err) {
-      console.error("Error updating job status:", err);
+      console.error(err);
       alert("Error updating job status");
     } finally {
       setUpdatingStatus(false);
@@ -168,45 +167,35 @@ export default function JobViewPage() {
   // -----------------------------
   // Offer / Reject applicant
   // -----------------------------
-  const handleApplicantAction = async (idapplicant: number, action: "offer" | "reject") => {
-  try {
-    const response = await fetch(
-      "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/offer_job",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          companyId: Number(userID),
-          jobId: Number(jobId),
-          applicantId: idapplicant,
-          action,
-        }),
-      }
-    );
-
-    const result = await response.json();
-    const parsed = JSON.parse(result.body);
-
-    if (parsed.status === "success") {
-      // ✅ Update offerStatus immediately
-      setApplicants((prev) =>
-        prev.map((app) =>
-          app.idapplicant === idapplicant
-            ? { ...app, offerStatus: action === "offer" ? "Offered" : "Rejected" }
-            : app
-        )
+  const handleApplicantAction = async (
+    idapplicant: number,
+    action: "offer" | "reject"
+  ) => {
+    try {
+      const response = await fetch(
+        "https://3o9qkf05xf.execute-api.us-east-2.amazonaws.com/v1/offer_job",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            companyId: Number(userID),
+            jobId,
+            applicantId: idapplicant,
+            action,
+          }),
+        }
       );
-    } else {
-      alert(parsed.error || "Failed to update applicant status");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Error updating applicant");
-  } finally {
-    setConfirmApplicantAction(null);
-  }
-};
+      const result = await response.json();
+      const parsed = JSON.parse(result.body);
 
+      if (parsed.status !== "success") {
+        alert(parsed.error || "Failed to update applicant status");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error updating applicant");
+    }
+  };
 
   // -----------------------------
   // Withdraw application
@@ -218,13 +207,9 @@ export default function JobViewPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jobId,
-            applicantId: Number(userID),
-          }),
+          body: JSON.stringify({ jobId, applicantId: Number(userID) }),
         }
       );
-
       const result = await response.json();
       const parsed = JSON.parse(result.body);
 
@@ -256,18 +241,13 @@ export default function JobViewPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jobId,
-            applicantId: Number(userID),
-          }),
+          body: JSON.stringify({ jobId, applicantId: Number(userID) }),
         }
       );
-
       const result = await response.json();
       const parsed = JSON.parse(result.body);
 
       if (response.ok) {
-        alert("Applied successfully!");
         setHasApplied(true);
         setApplicants((prev) => [
           ...prev,
@@ -306,6 +286,7 @@ export default function JobViewPage() {
         </span>
       </p>
 
+      {/* Company: Change status */}
       {userType === "company" && (
         <div className="mb-4">
           <label className="font-semibold mr-2">Change Status:</label>
@@ -336,14 +317,14 @@ export default function JobViewPage() {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Status (Active/Withdrawn)</th>
+                  <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {applicants.map((applicant) => {
-                  const isWithdrawn = applicant.status_statusType === "Withdrawn";
-
+                  const isWithdrawn =
+                    applicant.status_statusType === "Withdrawn";
                   return (
                     <tr key={applicant.idapplicant}>
                       <td className="border px-4 py-2">{applicant.name}</td>
@@ -444,23 +425,38 @@ export default function JobViewPage() {
         Back to Jobs
       </button>
 
-      {confirmApplicantAction && (
-  <ConfirmModal
-    message={`Are you sure you want to ${confirmApplicantAction.action} this applicant?`}
-    onConfirm={() => handleApplicantAction(confirmApplicantAction.id, confirmApplicantAction.action)}
-    onCancel={() => setConfirmApplicantAction(null)}
-  />
-)}
-
+      {/* Confirm Modals */}
+      {showConfirm && (
+        <ConfirmModal
+          message={`Are you sure you want to change status to ${newStatus}?`}
+          onConfirm={handleUpdateJobStatus}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
 
       {confirmApplicantAction && (
         <ConfirmModal
           message={`Are you sure you want to ${confirmApplicantAction.action} this applicant?`}
-          onConfirm={async () => {
-            await handleApplicantAction(
+          onConfirm={() => {
+            setApplicants((prev) =>
+              prev.map((app) =>
+                app.idapplicant === confirmApplicantAction.id
+                  ? {
+                      ...app,
+                      offerStatus:
+                        confirmApplicantAction.action === "offer"
+                          ? "Offered"
+                          : "Rejected",
+                    }
+                  : app
+              )
+            );
+
+            handleApplicantAction(
               confirmApplicantAction.id,
               confirmApplicantAction.action
             );
+
             setConfirmApplicantAction(null);
           }}
           onCancel={() => setConfirmApplicantAction(null)}
